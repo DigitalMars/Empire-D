@@ -1,0 +1,492 @@
+                             EMPIRE
+
+                  (The Wargame of the Century)
+
+
+
+                    Written by Walter Bright
+             Copyright (c) 1982-2002 by Walter Bright
+                       All Rights Reserved
+
+                     visit our web site at:
+                     www.classicempire.com
+
+
+    This software is furnished under a license for use only by 
+    the purchaser. This software may not be copied or made 
+    available to any other persons. Title and ownership of the 
+    software shall remain at all times in Walter Bright.
+
+    Walter Bright assumes no liability for the use or misuse 
+    of its software. Liability for any warranties implied or 
+    stated is limited to the replacement of the distribution 
+    media should it be determined to be defective within 
+    thirty days of its purchase.
+
+
+INTRODUCTION
+
+    Congratulations! You have purchased one of the most popular 
+    games on mainframe computers, now made available on the 
+    personal computer. Empire was 
+    originally written by Walter Bright for a PDP-10 at Caltech. 
+    The game has since been converted to run on a DEC VAX, and 
+    has been played for years at Caltech, MIT and at VAX 
+    installations. Empire was rewritten from scratch to run on 
+    smaller computers.
+
+    Empire is a simulation of a global conflict between two to 
+    three implacable foes. No compromise is possible, each must 
+    strive to annihilate the other. The war is conducted over a 
+    large map, with land, sea and cities on it. Each player 
+    manipulates his armies, fighters and ships to try and smash 
+    the others, to reach the goal of total domination of the 
+    world. Empire is not a video arcade-type game. It is a 
+    thinking man's game, as it requires strategy and tactics 
+    instead of hand-eye coordination.
+
+    Warning: Empire has been known to be addictive. Typical games 
+    can take several hours.
+
+REQUIREMENTS
+
+    Empire is designed to run on a Win32 system, which includes
+    Windows XP, Windows 2000, Windows NT, etc. It will not
+    run on 16 bit Windows such as Windows 3.1.
+
+INSTALLATION
+
+    To install, follow these steps:
+
+    1) Open a console window. Under XP, this means click on
+    [Start] followed by [Command Prompt].
+
+    2) Switch to the root directory:
+
+        cd \
+
+    3) Create the Empire directory:
+
+        md empire
+
+    4) Unzip the empire.zip file into the \empire directory using
+    winzip, unzip, etc.
+
+    5) You may make as many backups as needed for your personal use.
+
+
+GETTING STARTED
+
+    1) Run Empire from either the command prompt or the Run dialog
+    box. A window should appear with the Emperor directing an assault.
+
+    2) Click on the mouse button to bring up the main menu:
+
+        New Game...             Start a new game.
+        Open Game...            Continue existing saved game.
+        Save Game...            Save game in progress.
+        Sound on/off            Toggle sound on/off.
+        About Empire            Boring copyright notice.
+        Exit                    Leave Empire.
+
+    3) Click on [New Game...]. This brings up the [New Game] dialog
+    box. Select the number of computer driven enemy emperors to fight.
+    0 is a little boring, and 5 is more challenging. After that, pick
+    [Demo] to watch the computer emperors fight themselves. Select
+    [OK] when done, and the game begins.
+
+    4) A dialog box [City Production Demands] will appear.
+
+    Pick one of the following demands for your initial city to produce: 
+
+    A: Armies
+    F: Fighters
+    D: Destroyers
+    T: Troop transports
+    S: Submarines
+    R: Cruisers
+    C: Aircraft carriers
+    B: Battleships
+
+    For your first game, pressing A for armies is recommended.
+
+GENERAL INFORMATION
+
+    The game is played on a map of 60 rows by 100 columns. Row 
+    numbers are 0 to 59, column numbers are 0 to 99. Coordinates 
+    are shown as row,col.
+
+
+    Each row,col is a tile. Tiles are:
+
+    blank      unknown territory
+    blue       sea
+    green      land
+    *          unconquered city
+
+    Each player's pieces are their own colors. You'll be red.
+
+    The entire map is unknown (blank) until you start to explore 
+    it. Beware, however, that you cannot detect enemy pieces 
+    unless you are right next to them. The actual map that you 
+    see on the display is a summary of all the most recent 
+    information that you have about the world.
+
+    Each of your cities can be assigned to produce one of the 
+    pieces. A city is attacked by moving an 
+    army onto it. The army has a 50% chance of conquering it. 
+    Capturing cities is crucial to destroying your opponents.
+
+    An enemy piece is attacked by moving one of your pieces onto 
+    it. Hits are traded off (at a 50% chance of landing on one 
+    piece or the other) until one piece is totally destroyed. 
+    Only one of the pieces will survive the conflict. Each piece 
+    can withstand only so many hits before it is destroyed.
+    Damage sustained by a piece is cumulative until it is either 
+    destroyed or repaired. The number of hits that each piece can 
+    take are:
+
+          army                1
+          fighter             1
+          destroyer           3
+          troop transport     3
+          submarine           2
+          cruiser             8
+          aircraft carrier    8
+          battleship          12
+
+    Ships can be repaired by moving them into one of your cities.
+
+PIECES
+
+
+
+Armies:
+
+    Armies are of primary importance. Only armies can capture 
+    cities and take over continents. They move on land at a rate 
+    of 1 move per round. Movement across water is performed using 
+    a troop transport. To board a troop transport, just move your 
+    army onto it. Armies cannot move onto their own cities, they 
+    will be destroyed if they try. Armies drown when moving 
+    across water without the aid of a troop transport.
+
+Fighters:
+
+    Fighters are airplanes that can move over land or sea at the 
+    rate of 4 moves per round. They have a limited range, 
+    however, of 20 moves before they must refuel. Fighters can 
+    refuel by landing in conquered cities or on one of your 
+    aircraft carriers. Attempting to land in cities that aren't 
+    yours is futile.
+
+Destroyers, Cruisers, Battleships:
+
+    Ships can move on sea, or can dock in captured cities. They 
+    move at 2 moves per round like all ships, unless they're 
+    heavily damaged. In this case movement drops to 1 move per 
+    round. Ships can be repaired by docking them (moving them 
+    into one of your cities). These ships are normally used to 
+    protect your own troop transports or to menace the enemy's. 
+    Ships run aground and sink if you move them onto dry land.
+
+Submarines:
+
+    Submarines are like the other ships except that if one should 
+    score a hit against an enemy ship, 3 hits worth of damage is 
+    done instead of 1 (enough to sink the smaller ships!).
+
+Troop Transports:
+
+    Troop transports are used to carry armies from one continent 
+    to another. They can carry up to 6 armies, less if they're 
+    damaged. Troop transport captains are very short-tempered and 
+    tend to deal abruptly with armies should too many get aboard.
+
+Aircraft Carriers:
+
+    Carriers can carry and refuel fighters. They can carry a 
+    maximum of 8, less if they're damaged.
+
+OPERATION
+
+    The program will prompt you to move each piece. The prompt 
+    consists of a short message in the upper left corner of the 
+    screen, and the cursor will be positioned on the map. The 
+    message shows what mode you are in. The modes are:
+
+    Move
+    Survey
+    Direction
+    From To
+    City Prod
+
+    If no mode message is displayed, the program is not expecting 
+    a command. All commands consist of single keys. No carriage 
+    return is required.
+
+    Direction keys:
+
+    QWE
+    A D        This is the layout of the direction keys
+    ZXC        on a QWERTY keyboard.
+
+    The letters QWEADZXC represent directions of movement, as if 
+    the cursor were situated on the letter S of your keyboard. 
+    For example, E means move upward and to the right. X means 
+    move straight down. The space bar indicates no movement.
+
+    If you have an IBM PC keyboard, the arrow keys may be used 
+    instead.
+
+    Each mode is explained below.
+
+MOVE MODE
+
+    Most of the game will be spent in move mode. In fact, the 
+    entire game can be played without ever leaving it. In this 
+    mode, the cursor will be positioned over where the piece is, 
+    and the top line of the display will show what the piece is. 
+    You can enter either a move or a command.
+
+    A move is entered by pressing one of the direction keys 
+    indicating the direction that you want the piece to go in. If 
+    you don't want the piece to move, press the space bar.
+
+    The following commands are available in MOVE mode:
+
+    F     Set the piece to move towards a specified location. 
+          This will put you in the From To mode. See FUNCTIONS.
+
+    G     Set the piece (must be a fighter) moving towards the 
+          nearest owned city or aircraft carrier.
+
+    H     Give the enemy 20 free moves. Do this if you feel the 
+          enemy is doing poorly and is not giving you a 
+          sufficient challenge.
+
+    I     Set the piece to moving in a specified direction. This 
+          will put you in the Direction mode. See FUNCTIONS.
+
+    J     Turn the sound on/off.
+
+    K     Awaken the piece the cursor is on. See FUNCTIONS.
+
+    L     Set the piece (a troop transport or aircraft carrier) 
+          in the Load Armies or Load Fighters function. See 
+          FUNCTIONS.
+
+    N     Center the screen about the current position of the 
+          cursor.
+
+    R     Set the piece to moving at random. See FUNCTIONS.
+
+    S     Set the piece to be a sentry. See FUNCTIONS.
+
+    U     If the piece is a troop transport or an aircraft 
+          carrier, wake up all the armies or fighters that are 
+          aboard.
+
+    V     Save the game. The game will be saved in a file called 
+          EMPIRE.DAT on the default drive. The file will be 31000 
+          bytes long. If your disk is too full for it, you will 
+          get an error mesasge. If so, insert an empty (but 
+          formatted) disk in and try again.
+
+    Y     Enter SURVEY mode.
+
+    Control Break   This is used to exit the program and return 
+          to DOS.
+
+    <     Decrease delay time by 1/4 second. This delay time is 
+          the time that messages stay on the screen before the 
+          program moves on. The messages become redundant after a 
+          while, and can be speeded up with this command.
+
+    >     Increase delay time by 1/4 second. Use if the messages 
+          flash by too fast.
+
+
+SURVEY MODE
+
+    This mode allows you to travel around and look at the map, 
+    alter the functions assigned to your pieces, change the 
+    production demands given to cities, etc. It is entered using 
+    the Y command from MOVE mode.
+
+    The direction keys move the cursor around. Each time you move 
+    the cursor onto one of your pieces or cities, information on 
+    that piece or city will be displayed. Note that commands in 
+    SURVEY mode operate only on the piece displayed (for 
+    instance, you cannot operate on an army aboard a troop 
+    transport from the SURVEY mode).
+
+    Most commands operate the same as in move mode. The 
+    differences are:
+
+    G     Using G when the cursor is on a city sets the FIPATH of 
+          that city to the nearest conquered city or aircraft 
+          carrier. See FIPATH.
+
+    K     Using K when the cursor is on a city disables the 
+          city's FIPATH if it has one. See FIPATH.
+
+    P     Assign new production demands to a city by putting you 
+          in the CITY PROD mode.
+
+    U     Using U when the cursor is on a city awakens all the 
+          pieces that may be in that city.
+
+    V,Y   Not available.
+
+    esc   Return to MOVE mode.
+
+DIR MODE
+
+    This mode expects a direction key to be pressed. This will 
+    then assign the direction function to the piece that the 
+    cursor is on. See FUNCTIONS.
+
+    Escape (the esc key) will abort this mode.
+
+
+City Production Demands
+
+    This dialog box is for selecting production demands for a city.
+
+                                 Production Time
+
+                        Key      Start    Continue
+    armies               A         6         5
+    fighters             F         12        10
+    destroyers           D         24        20
+    troop transports     T         36        30
+    submarines           S         30        25
+    cruisers             R         60        50
+    aircraft carriers    C         72        60
+    battleships          B         90        75
+
+    The start time is the number of rounds required to produce a 
+    piece for the first time. The continuing time is the number 
+    of rounds required to produce subsequent pieces. If you 
+    change the production demands of a city before it has 
+    completed its piece, the partially completed piece will be 
+    discarded.
+
+FROM TO MODE
+
+    This mode is used to assign the MOVE TO function to a piece. 
+    Move the cursor until it is on the location that you wish to 
+    move the piece to, and press T (as in FROM location TO 
+    location).
+
+    Note: If you are giving the MOVE TO function to a fighter, 
+          the cursor's distance from the fighter cannot exceed 
+          the fighter's fuel remaining. This also applies to 
+          setting the FIPATH of a city.
+
+    Escape will abort this mode.
+
+FUNCTIONS
+
+
+    In order to relieve the tedium of moving each piece each 
+    round, your pieces can be assigned various functions, under 
+    which they move automatically. The functions are:
+
+    NONE            No function, or awake. You will be asked for 
+                    a move each turn.
+
+    SENTRY          The piece will not move.
+
+    RANDOM          The piece will move at random subject to the 
+                    following conditions:
+
+                    1) The piece will not do anything to cause it 
+                    to be destroyed.
+
+                    2) If it is an army, it will board an 
+                    unloaded troop transport and wake up if it is 
+                    next to one.
+
+    MOVE TO         The piece is set to move towards a specified 
+                    location. When it arrives, it will return to 
+                    the NONE function. If something is in the 
+                    way, you will be asked to move the piece 
+                    around the obstacle (this is called 
+                    temporarilly waking up).
+
+    DIRECTION       The piece will move in a specified direction. 
+                    It will temporarilly wake up if something is 
+                    in its way.
+
+    LOAD ARMIES     A troop transport can be assigned this 
+                    function, in which case it will go on sentry 
+                    duty until it is fully loaded with armies.
+
+    LOAD FIGHTERS   Same as LOAD ARMIES, but for aircraft 
+                    carriers instead.
+
+    In general, the following constraints apply:
+
+    1) When a fighter is 10 moves out, it will temporarilly wake 
+    up to give you a chance to return it to a city or carrier for 
+    refueling. The G command comes in handy here.
+
+    2) Armies always temporarilly wake up if they're next to an 
+    unconquered city.
+
+    3) All pieces wake up if they're next to an enemy piece.
+
+FIPATH
+
+    Each of your cities can be assigned a FIPATH. This is a 
+    location, which when a fighter lands in that city, is 
+    assigned to that fighter. It shows up as a MOVE TO function 
+    for the fighter. FIPATHS are assigned to cities from the 
+    SURVEY mode using the F and T commands. Clear the FIPATH 
+    using the K command. FIPATHs are very useful when cities are 
+    producing fighters far from the front, the fighters can be 
+    'chained' from city to city up to the front. 
+
+
+MISCELLANEOUS
+
+    Other players' moves are performed while the computer is 
+    waiting for a command from you. This can be entertaining at 
+    times, like when a piece is destroyed while you are trying to 
+    move it! In any case, there is a 10 to 20 round maximum 
+    spread between players. If you exceed this limit, no more 
+    commands will be accepted until the other players have caught 
+    up a bit.
+
+    Watch out on the map displays. The locations of enemy pieces 
+    shown may not be accurate, as they probably moved since you 
+    detected them! Remember that the map displays only a history 
+    of what you have seen before.
+
+    The computer operated players play by the same rules and 
+    under the same conditions that you do. It has no special 
+    advantages, though it may appear otherwise at times.
+
+    When a new game is started, it may take 100 to 200 rounds of 
+    play before you discover the other players (or they discover 
+    you!). Be patient, it's a large map.
+
+    Be careful of whether you are in MOVE mode or SURVEY mode. 
+    Entering many commands in MOVE mode when you thought you were 
+    in SURVEY mode can run ships aground and drown armies 
+    inadvertantly.
+
+    When in MOVE mode, and the cursor is on a troop transport, 
+    the message at the top of the screen will show whether a 
+    transport is to be moved or an army that is aboard it. Moving 
+    the wrong one can run the transport aground or drown the 
+    army.
+
+DEMO MODE
+
+    When running in Demo mode, where the computer emperors fight each
+    other, your initial point of view will be for the Red player.
+    To cycle through all the players' point of views, type the 'O'
+    key, or select [View][Change POV].
