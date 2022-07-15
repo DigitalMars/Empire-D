@@ -19,8 +19,8 @@ module empire;
 
 import std.random;
 
-alias int dir_t;		// direction
-alias uint loc_t;		// location
+alias dir_t = int;        // direction
+alias loc_t = uint;        // location
 
 enum : loc_t {
 	LOC_INVALID,
@@ -28,9 +28,19 @@ enum : loc_t {
 	LOC_LASTMAGIC = LOC_HIDDEN
 }
 
-void setran() { std.random.rand_seed(37, 49); }
-uint random(uint p) { return std.random.rand() % p; }
-uint ranq() { return std.random.rand(); }
+// this method is used only in debug to make things predictable
+void setran() {
+    std.random.rndGen().seed(3749);
+    //std.random.rand_seed(37, 49);
+}
+uint random(uint p) {
+    return std.random.uniform(0, p);
+    //return std.random.rand() % p;
+}
+uint ranq() {
+    return std.random.uniform!uint;
+    //return std.random.rand();
+}
 
 const int ERRTERM	= 1;
 
