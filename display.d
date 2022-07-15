@@ -49,13 +49,13 @@ deprecated struct Display
 
 	void clrsec()
 	{
-		Display* d = this;
-		Text* t = &d.text;
+		//Display* d = this;
+		//Text* t = &text;
 
 		//t.cmes(d.Smin," ");				// " " because of bug in BIOS
 		//t.deleos();						// delete to end of screen
 
-		d.secbas = -1;						// indicate screen is blank
+		this.secbas = -1;						// indicate screen is blank
 	}
 
 
@@ -66,8 +66,8 @@ deprecated struct Display
 	void mapprt(loc_t loc)
 	{
 		int x;
-		Display* d = this;
-		Text* t = &d.text;
+		//Display* d = this;
+		Text* t = &text;
 
 		if (!t.watch) return;
 		assert(loc < MAPSIZE);
@@ -89,10 +89,10 @@ deprecated struct Display
 		int br,bc,lr,lc;
 		int x;
 		int sb;
-		Display* d = this;
+		//Display* d = this;
 
 		assert(loc < MAPSIZE && n < 100);
-		sb = d.secbas;
+		sb = secbas;
 		if (sb == -1)
 			return false;
 		br = sb / (Mcolmx + 1);
@@ -107,8 +107,8 @@ deprecated struct Display
 		x = (bc) ? bc + n : bc;				// min col we can be on
 		if (lc < x) return false;
 
-		br += (d.Smax - d.Smin) >> 8;
-		bc += (d.Smax - d.Smin) & 0xFF;
+		br += (Smax - Smin) >> 8;
+		bc += (Smax - Smin) & 0xFF;
 
 		x = (br != Mrowmx) ? br - n : br;		// max row we can be on
 		if (lr > x) return false;
@@ -124,7 +124,7 @@ deprecated struct Display
 	loc_t adjust(loc_t loc)
 	{
 		int row,col,size,rowsize,colsize;
-		Display* d = this;
+		//Display* d = this;
 
 		row = ROW(loc);
 		col = COL(loc);
@@ -133,7 +133,7 @@ deprecated struct Display
 			col = 0;
 			row++;
 		}
-		size = d.Smax - d.Smin;						// display size
+		size = Smax - Smin;						// display size
 		rowsize = size >> 8;						// # of rows - 1
 		colsize = size & 0xFF;
 		if (row < 0) row = 0;
@@ -906,13 +906,13 @@ deprecated struct Display
 
 	void delay(int n)
 	{
-		Display* d = this;
+		//Display* d = this;
 
-		if (d.text.watch)
+		if (text.watch)
 		{
-			d.text.flush();
-			if (d.timeinterval)
-				sleep(n * d.timeinterval);
+			text.flush();
+			if (timeinterval)
+				sleep(n * timeinterval);
 		}
 	}
 
@@ -929,15 +929,15 @@ deprecated struct Display
 
 void typcit(Player* p, City* c)
 {
-	Display* d = p.display;
-	Text* t = &d.text;
+	//Display* d = p.display;
+	Text* t = &text;
 
 	if (t.watch)
 	{
 		if (c.phs == -1)
 			return;		// invalid city phase
 		t.cmes(t.DS(1),t.narrow ? "Prod: " : "Producing: ");
-		t.vsmes("%.*s Completion: %d",d.nmes_p(c.phs,2),c.fnd);
+		t.vsmes("%.*s Completion: %d",nmes_p(c.phs,2),c.fnd);
 		if (p.human && c.fipath)
 			t.vsmes(" Fipath: %u,%u",ROW(c.fipath),COL(c.fipath));
 		t.deleol();
