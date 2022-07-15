@@ -256,5 +256,5 @@ bool resgam(FILE* fp)
 err2:
 	fclose(fp);
 err:
-	return false;	// fixed in a later commit.
+	return true;	// false here apparently was a typo in Stewart code.
 }
