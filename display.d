@@ -290,17 +290,17 @@ struct Display
      * Print number of units destroyed
      */
 
-    void killml(int type,int num)
-    {
-	Text *t = &text;
-	if (t.watch)
+	void killml(int type,int num)
 	{
-	    t.curs(text.DS(3));
-	    t.vsmes("%d %s destroyed.",num,nmes_p(type,num));
-	    t.deleol();
-	    delay(3);
+		Text* t = &text;
+		if (t.watch)
+		{
+			t.curs(text.DS(3));
+			t.vsmes("%d %.*s destroyed.",num, nmes_p(type,num));
+			t.deleol();
+			delay(3);
+		}
 	}
-    }
 
     /*************************************
      * Overloaded T or C.
@@ -323,83 +323,98 @@ struct Display
      * Type out the heading of the unit.
      */
 
-    void headng(Unit *u)
-    {   int type,abd;
-	Text *t = &text;
-	char *y;
-	char buffer[100];
-
-	if (!t.watch)
-	    return;
-	t.curs(text.DS(0));
-	if (u.typ == A)
+	void headng(Unit* u)
 	{
-	    sprintf(buffer,"Your army at %u,%u.", ROW(u.loc), COL(u.loc));
+		int type, abd;
+		Text* t = &text;
+		//char* y;
+		//char buffer[100];
+		char[] y;
+		char[] buffer;
+
+		if (!t.watch)
+			return;
+		t.curs(text.DS(0));
+		if (u.typ == A)
+		{
+			//sprintf(buffer,"Your army at %u,%u.", ROW(u.loc), COL(u.loc));
+			buffer = format("Your army at %d,%d.", ROW(u.loc), COL(u.loc));
+		}
+		else
+		{
+			//char buf[10+1];
+
+			y = text.narrow ? "Yr" : "Your";
+			//sprintf(buffer,"%s %s at %u,%u.",y,nmes_p(u.typ,1),ROW(u.loc),COL(u.loc));
+			buffer = format("%s %s at %d,%d.", y, nmes_p(u.typ, 1),
+			  ROW(u.loc), COL(u.loc));
+
+			if ((type = tcaf(u)) >= 0)				// if we have a T or C
+			{
+				/+char buf[10];
+
+				abd = aboard(u);				// # aboard
+				sprintf(buf," %d ",abd);
+				strcat(buffer,buf);
+				strcat(buffer,nmes_p(type,abd));
+				strcat(buffer," aboard.");+/
+				abd = aboard(u);
+				buffer ~= format(" %d %s aboard.", abd, nmes_p(type,abd));
+
+			}
+			if (u.typ == F) {				// if a fighter
+				//strcat(buffer," Range: ");
+				buffer ~= " Range: ";
+			} else {								// else ship
+				//strcat(buffer," Hits: ");
+				buffer ~= " Hits: ";
+			}
+			/+sprintf(buf,"%d",u.hit);
+			strcat(buffer,buf);+/
+			buffer ~= format("%d", u.hit);
+		}
+		t.smes(buffer);
+		t.deleol();
+		t.curs(text.DS(1));
+		fncprt(u);								// print function
 	}
-	else
-	{
-	    char buf[10+1];
-
-	    y = text.narrow ? "Yr" : "Your";
-	    sprintf(buffer,"%s %s at %u,%u.",y,nmes_p(u.typ,1),ROW(u.loc),COL(u.loc));
-
-	    if ((type = tcaf(u)) >= 0)		// if we have a T or C
-	    {   char buf[10];
-
-		abd = aboard(u);		// # aboard
-		sprintf(buf," %d ",abd);
-		strcat(buffer,buf);
-		strcat(buffer,nmes_p(type,abd));
-		strcat(buffer," aboard.");
-	    }
-	    if (u.typ == F)		// if a fighter
-		strcat(buffer," Range: ");
-	    else				// else ship
-		strcat(buffer," Hits: ");
-	    sprintf(buf,"%d",u.hit);
-	    strcat(buffer,buf);
-	}
-	t.smes(buffer);
-	t.deleol();
-	t.curs(text.DS(1));
-	fncprt(u);				// print function
-    }
 
 
     /*********************
      * Type out unit message, plural or singular
      */
 
-    char *nmes_p(int type,int num)
-    in
-    {
-	assert(0 <= type && type < TYPMAX);
-    }
-    body
-    {
-	static char *msg[8][2] =
-	[   [	"army",			"armies"		],
-	    [   "fighter",		"fighters"		],
-	    [   "destroyer",		"destroyers"		],
-	    [   "troop transport",	"troop transports"	],
-	    [   "submarine",		"submarines"		],
-	    [   "cruiser",		"cruisers"		],
-	    [   "aircraft carrier",	"aircraft carriers"	],
-	    [   "battleship",		"battleships"		],
-	];
+	char[] nmes_p(int type,int num)
+	in
+	{
+		assert(0 <= type && type < TYPMAX);
+	}
+	body
+	{
+		static char[][2][8] msg =
+		[
+			[ "army",             "armies"            ],
+			[ "fighter",          "fighters"          ],
+			[ "destroyer",        "destroyers"        ],
+			[ "troop transport",  "troop transports"  ],
+			[ "submarine",        "submarines"        ],
+			[ "cruiser",          "cruisers"          ],
+			[ "aircraft carrier", "aircraft carriers" ],
+			[ "battleship",       "battleships"       ]
+		];
 
-	// For narrow displays
-	static char msgn[8][2][3] =
-	[
-	    [   "A","As" ],
-	    [   "F","Fs" ],
-	    [   "D","Ds" ],
-	    [   "T","Ts" ],
-	    [   "S","Ss" ],
-	    [   "R","Rs" ],
-	    [   "C","Cs" ],
-	    [   "B","Bs" ],
-	];
+		// For narrow displays
+		static char[3][2][8] msgn =
+		[
+			[ "A","As" ],
+			[ "F","Fs" ],
+			[ "D","Ds" ],
+			[ "T","Ts" ],
+			[ "S","Ss" ],
+			[ "R","Rs" ],
+			[ "C","Cs" ],
+			[ "B","Bs" ]
+		];
 
 	if (text.narrow)
 	    return (num == 1) ? msgn[type][0] : msgn[type][1];
@@ -455,22 +470,22 @@ struct Display
     void drown(Unit *u)
     {   Text *t = &text;
 
-	if (t.watch)
-	{
-	    if (t.narrow > 1)
-	    {
-		t.cmes(text.DS(1),"Army marched into sea!\1");
-	    }
-	    else
-	    {
-		t.curs(text.DS(1));
-		your();
-		t.vsmes("%s marched into the sea and drowned!",nmes_p(A,1));
-		t.imes("\1\2");
-	    }
-	    sound_splash();
+		if (t.watch)
+		{
+			if (t.narrow > 1)
+			{
+				t.cmes(text.DS(1),"Army marched into sea!\1");
+			}
+			else
+			{
+				t.curs(text.DS(1));
+				your();
+				t.vsmes("%.*s marched into the sea and drowned!",nmes_p(A,1));
+				t.imes("\1\2");
+			}
+			sound_splash();
+		}
 	}
-    }
 
     void shot_down(Unit *u)
     {   Text *t = &text;
@@ -513,20 +528,24 @@ struct Display
      * Unit u is under attack.
      */
 
-    void underattack(Unit *u)
-    {
-	Text *t = &text;
-	if (t.watch)
-	{   char *p;
+	void underattack(Unit* u)
+	{
+		Text* t = &text;
+		if (t.watch)
+		{
+			//char* p;
 
-	    t.curs(text.DS(2));
-	    p = text.narrow ? "Yr" : "Your";
-	    t.vsmes("%s %s is under attack at %u,%u.",
-		p,nmes_p(u.typ,1),ROW(u.loc),COL(u.loc));
-	    t.deleol();
-	    delay(2);
+			t.curs(text.DS(2));
+			/+p = text.narrow ? "Yr" : "Your";
+			t.vsmes("%s %.*s is under attack at %u,%u.",
+				p,nmes_p(u.typ,1),ROW(u.loc),COL(u.loc));+/
+			t.smes(format("%s %s is under attack at %d,%d.",
+			  text.narrow ? "Yr" : "Your", nmes_p(u.typ, 1),
+			  ROW(u.loc),COL(u.loc)));
+			t.deleol();
+			delay(2);
+		}
 	}
-    }
 
 
     /***************************************
@@ -537,33 +556,37 @@ struct Display
      *	ulos	loser
      */
 
-    void battle(Player *p,Unit *uwin,Unit *ulos)
-    {
-	char* p1;
-	char* p2;
-	Text* t = &text;
+	void battle(Player* p, Unit* uwin, Unit* ulos)
+	{
+		char[] p1;
+		char[] p2;
+		Text* t = &text;
 
 	if (t.watch)
 	{   int abd;
 
-	    t.curs(text.DS(2));
-	    t.vsmes("%s%s destroyed.",youene_p(p,ulos.own),nmes_p(ulos.typ,1));
-	    t.deleol();
-	    abd = aboard(ulos);
-	    if (abd)
-		killml(tcaf(ulos),abd);
-	    t.curs(text.DS(3));
-	    if (uwin.typ != A && uwin.typ != F)
-	    {
-		p1 = youene_p(p,uwin.own);
-		p2 = nmes_p(uwin.typ,1);
-		if (uwin.hit == 1)
-		    t.vsmes("%s%s has 1 hit left",p1,p2);
-		else
-		    t.vsmes("%s%s has %d hits left",p1,p2,uwin.hit);
-	    }
-	    t.deleol();
-	    t.flush();
+			t.curs(text.DS(2));
+			//t.vsmes("%s%.*s destroyed.",youene_p(p,ulos.own),nmes_p(ulos.typ,1));
+			t.smes(format("%s%s destroyed.", youene_p(p, ulos.own),
+			  nmes_p(ulos.typ, 1)));
+			t.deleol();
+			abd = aboard(ulos);
+			if (abd)
+				killml(tcaf(ulos),abd);
+			t.curs(text.DS(3));
+			if (uwin.typ != A && uwin.typ != F)
+			{
+				p1 = youene_p(p,uwin.own);
+				p2 = nmes_p(uwin.typ,1);
+				if (uwin.hit == 1)
+					//t.vsmes("%s%.*s has 1 hit left",p1,p2);
+					t.smes(format("^%s%s has 1 hit left", p1, p2));
+				else
+					//t.vsmes("%s%.*s has %d hits left",p1,p2,uwin.hit);
+					t.smes(format("%s%s has %d hits left", p1, p2, uwin.hit));
+			}
+			t.deleol();
+			t.flush();
 
 	    ShowBlast(1, ulos.loc);
 	    switch (ulos.typ)
@@ -585,17 +608,17 @@ struct Display
     /*************************************
      */
 
-    char *youene_p(Player *p,int num)
-    {
-	if (p.num == num)
+	char[] youene_p(Player* p,int num)
 	{
-	    return text.narrow ? "Yr " : "Your ";
+		if (p.num == num)
+		{
+			return text.narrow ? "Yr " : "Your ";
+		}
+		else
+		{
+			return text.narrow ? "En " : "Enemy ";
+		}
 	}
-	else
-	{
-	    return text.narrow ? "En " : "Enemy ";
-	}
-    }
 
     /******************************
      * Notify player that pdef has been defeated.
@@ -641,13 +664,13 @@ struct Display
 	if (t.watch)
 	{   char *p;
 
-	    t.curs(text.DS(0));
-	    p = (c.phs == A || c.phs == C) ? "n" : "";
-	    t.vsmes("City at %u,%u has completed a%s %s.",
-		    ROW(c.loc),COL(c.loc),p,nmes_p(c.phs,1));
-	    t.imes("\1\2");
+			t.curs(text.DS(0));
+			p = (c.phs == A || c.phs == C) ? "n" : "";
+			t.vsmes("City at %u,%u has completed a%s %.*s.",
+					ROW(c.loc),COL(c.loc),p,nmes_p(c.phs,1));
+			t.imes("\1\2");
+		}
 	}
-    }
 
     /**************************************
      */
@@ -881,16 +904,16 @@ void typcit(Player *p,City *c)
     Display *d = p.display;
     Text *t = &d.text;
 
-    if (t.watch)
-    {
-	if (c.phs == -1)
-	    return;	// invalid city phase
-	t.cmes(t.DS(1),t.narrow ? "Prod: " : "Producing: ");
-	t.vsmes("%s Completion: %d",d.nmes_p(c.phs,2),c.fnd);
-	if (p.human && c.fipath)
-	    t.vsmes(" Fipath: %u,%u",ROW(c.fipath),COL(c.fipath));
-	t.deleol();
-    }
+	if (t.watch)
+	{
+		if (c.phs == -1)
+			return;		// invalid city phase
+		t.cmes(t.DS(1),t.narrow ? "Prod: " : "Producing: ");
+		t.vsmes("%.*s Completion: %d",d.nmes_p(c.phs,2),c.fnd);
+		if (p.human && c.fipath)
+			t.vsmes(" Fipath: %u,%u",ROW(c.fipath),COL(c.fipath));
+		t.deleol();
+	}
 }
 
 /***********************************
