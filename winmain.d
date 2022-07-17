@@ -91,8 +91,10 @@ struct Global
     HFONT  hFont;
     short cxChar, cxCaps, cyChar;
 
-    // Pen
-    HPEN hPen;
+	// Pen
+	//HPEN borderPen;
+	HPEN dashedPen;
+	HPEN originalPen;
 
 	// Bitmaps
 	HANDLE[MAPMAX] mapvaltab;
@@ -336,10 +338,14 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 
 	    hdc = GetDC(hwnd);
 
-	    logfont.lfHeight = 10;
-	    logfont.lfWidth = 5;
-	    global.hFont = CreateFontIndirectA(&logfont);
-	    SelectObject(hdc, global.hFont);
+		//global.borderPen = CreatePen(PS_SOLID, dx/3+2, RGB(255, 0, 0));
+		global.dashedPen = CreatePen(PS_DASH, 0, RGB(255, 255, 255));
+		global.originalPen = SelectObject(hdc, global.dashedPen);
+
+		logfont.lfHeight = 10;
+		logfont.lfWidth = 5;
+		global.hFont = CreateFontIndirectA(&logfont);
+		SelectObject(hdc, global.hFont);
 
 	    GetTextMetricsA(hdc, &tm);
 	    global.cxChar = tm.tmAveCharWidth;
@@ -704,20 +710,24 @@ version(none)
 				}
 			}
 
-		// Draw a rectangle around the map edge
-		int x1,y1,x2,y2;
-		x1 = -c * dx - global.offsetx;
-		y1 = 40 - r * dx - global.offsety;
-		x2 = x1 + (Mcolmx + 1) * dx - 1;
-		y2 = y1 + (Mrowmx + 1) * dy - 1;
-		global.hPen = CreatePen(PS_SOLID, dx/3+2, RGB(255, 0, 0));
-		SelectObject(hdc, global.hPen);
-		MoveToEx(hdc, x1, y1, null);
-		LineTo(hdc, x2, y1);
-		LineTo(hdc, x2, y2);
-		LineTo(hdc, x1, y2);
-		LineTo(hdc, x1, y1);
-		DeleteObject(global.hPen);
+			// Draw a rectangle around the map edge
+			int x1,y1,x2,y2;
+			x1 = -c * dx - global.offsetx;
+			y1 = 40 - r * dx - global.offsety;
+			x2 = x1 + (Mcolmx + 1) * dx - 1;
+			y2 = y1 + (Mrowmx + 1) * dy - 1;
+			HPEN borderPen
+			  = CreatePen(PS_SOLID, dx/3+2, RGB(255, 0, 0));
+			SelectObject(hdc, borderPen);
+
+			MoveToEx(hdc, x1, y1, null);
+			LineTo(hdc, x2, y1);
+			LineTo(hdc, x2, y2);
+			LineTo(hdc, x1, y2);
+			LineTo(hdc, x1, y1);
+
+			SelectObject(hdc, global.dashedPen);
+			DeleteObject(borderPen);
 
 		// Do the blast graphic
 		if (global.blastState)
@@ -726,161 +736,148 @@ version(none)
 		    DrawBitmap(hdc, global.blastx, global.blasty, global.hBlast, 1.0, 1.0, SRCPAINT);
 		}
 
-		// Do the survey mode graphic
-		if (global.player && global.player.mode == mdSURV)
-		{   HPEN hPen;
-		    int x1,y1,x2,y2;
-		    int cursorx, cursory;
-
-		    hPen = CreatePen(PS_DASH, 0, RGB(255, 255, 255));
-		    SelectObject(hdc, hPen);
-
-		    cursorx = LocToX(global.player.curloc);
-		    cursory = LocToY(global.player.curloc);
-
-		    x1 = 0;
-		    y1 = cursory;
-		    x2 = cursorx - dx/2;
-		    y2 = y1;
-		    MoveToEx(hdc, x1, y1, null);
-		    LineTo(hdc, x2, y2);
-
-		    x1 = x2 + dx;
-		    x2 = global.pixelx;
-		    MoveToEx(hdc, x1, y1, null);
-		    LineTo(hdc, x2, y2);
-
-		    x1 = cursorx;
-		    y1 = 40;
-		    x2 = x1;
-		    y2 = cursory - dy/2;
-		    MoveToEx(hdc, x1, y1, null);
-		    LineTo(hdc, x2, y2);
-
-		    y1 = y2 + dy;
-		    y2 = 40 + global.pixely;
-		    MoveToEx(hdc, x1, y1, null);
-		    LineTo(hdc, x2, y2);
-
-		    DeleteObject(hPen);
-		}
-
-		// Do the direction mode graphic
-		if (global.player && global.player.mode == mdDIR)
-		{   HPEN hPen;
-		    int x1,y1,x2,y2;
-		    int cursorx, cursory;
-
-		    hPen = CreatePen(PS_DASH, 0, RGB(255, 255, 255));
-		    SelectObject(hdc, hPen);
-
-		    cursorx = LocToX(global.player.curloc);
-		    cursory = LocToY(global.player.curloc);
-
-		    /* -O */
-		    x1 = cursorx - dx/2 - 2 * dx;
-		    y1 = cursory;
-		    x2 = cursorx - dx/2;
-		    y2 = y1;
-		    MoveToEx(hdc, x1, y1, null);
-		    LineTo(hdc, x2, y2);
-
-		    /* \
-		     *  O
-		     */
-		    y1 -= 2 * dy + dy/2;
-		    y2 -= dy/2;
-		    MoveToEx(hdc, x1, y1, null);
-		    LineTo(hdc, x2, y2);
-
-		    /*  O
-		     * /
-		     */
-		    y1 += dy * 5;
-		    y2 += dy;
-		    MoveToEx(hdc, x1, y1, null);
-		    LineTo(hdc, x2, y2);
-
-		    /*  O
-		     *  |
-		     */
-		    x1 = cursorx;
-		    x2 = x1;
-		    MoveToEx(hdc, x1, y1, null);
-		    LineTo(hdc, x2, y2);
-
-		    /*  O
-		     *   \
-		     */
-		    x1 += (dx - dx/2) + 2 * dx;
-		    x2 += (dx - dx/2);
-		    MoveToEx(hdc, x1, y1, null);
-		    LineTo(hdc, x2, y2);
-
-		    /*  O- */
-		    y1 = cursory;
-		    y2 = y1;
-		    MoveToEx(hdc, x1, y1, null);
-		    LineTo(hdc, x2, y2);
-
-		    /*   /
-		     *  O
-		     */
-		    y1 -= dy/2 + 2 * dy;
-		    y2 -= dy/2;
-		    MoveToEx(hdc, x1, y1, null);
-		    LineTo(hdc, x2, y2);
-
-		    /*  |
-		     *  O
-		     */
-		    x1 = cursorx;
-		    x2 = x1;
-		    MoveToEx(hdc, x1, y1, null);
-		    LineTo(hdc, x2, y2);
-
-		    DeleteObject(hPen);
-		}
-
-		// Do the move mode graphic
-		if (global.player && global.player.mode == mdTO)
-		{   HPEN hPen;
-		    int x1,y1,x2,y2;
-
-		    hPen = CreatePen(PS_DASH, 0, RGB(255, 255, 255));
-		    x1 = LocToX(global.player.frmloc);
-		    y1 = LocToY(global.player.frmloc);
-		    x2 = LocToX(global.player.curloc);
-		    y2 = LocToY(global.player.curloc);
-		    SelectObject(hdc, hPen);
-		    MoveToEx(hdc, x1, y1, null);
-		    if (x1 != x2 && y1 != y2)
-		    {	int x, y;
-			int ax, ay;
-
-			ax = abs(x1 - x2);
-			ay = abs(y1 - y2);
-			if (ax < ay)
+			// Do the survey mode graphic
+			if (global.player && global.player.mode == mdSURV)
 			{
-			    x = x2;
-			    if (y1 < y2)
-				y = y1 + ax;
-			    else
-				y = y1 - ax;
+				HPEN hPen;
+				int x1s, y1s, x2s, y2s;
+				int cursorx, cursory;
+
+				cursorx = LocToX(global.player.curloc);
+				cursory = LocToY(global.player.curloc);
+
+				x1s = 0;
+				y1s = cursory;
+				x2s = cursorx - dx/2;
+				y2s = y1s;
+				MoveToEx(hdc, x1s, y1s, null);
+				LineTo(hdc, x2s, y2s);
+
+				x1s = x2s + dx;
+				x2s = global.pixelx;
+				MoveToEx(hdc, x1s, y1s, null);
+				LineTo(hdc, x2s, y2s);
+
+				x1s = cursorx;
+				y1s = 40;
+				x2s = x1s;
+				y2s = cursory - dy/2;
+				MoveToEx(hdc, x1s, y1s, null);
+				LineTo(hdc, x2s, y2s);
+
+				y1s = y2s + dy;
+				y2s = 40 + global.pixely;
+				MoveToEx(hdc, x1s, y1s, null);
+				LineTo(hdc, x2s, y2s);
 			}
-			else
+
+			// Do the direction mode graphic
+			if (global.player && global.player.mode == mdDIR)
 			{
-			    if (x1 < x2)
-				x = x1 + ay;
-			    else
-				x = x1 - ay;
-			    y = y2;
+				HPEN hPen;
+				int x1s, y1s, x2s, y2s;
+				int cursorx, cursory;
+
+				cursorx = LocToX(global.player.curloc);
+				cursory = LocToY(global.player.curloc);
+
+				/* -O */
+				x1s = cursorx - dx/2 - 2 * dx;
+				x2s = cursorx - dx/2;
+				y1s = y2s = cursory;
+				MoveToEx(hdc, x1s, y1s, null);
+				LineTo(hdc, x2s, y2s);
+
+				/* \
+				 *  O
+				 */
+				y1s -= 2 * dy + dy/2;
+				y2s -= dy/2;
+				MoveToEx(hdc, x1s, y1s, null);
+				LineTo(hdc, x2s, y2s);
+
+				/*  O
+				 * /
+				 */
+				y1s += dy * 5;
+				y2s += dy;
+				MoveToEx(hdc, x1s, y1s, null);
+				LineTo(hdc, x2s, y2s);
+
+				/*  O
+				 *  |
+				 */
+				x1s = x2s = cursorx;
+				MoveToEx(hdc, x1s, y1s, null);
+				LineTo(hdc, x2s, y2s);
+
+				/*  O
+				 *   \
+				 */
+				x1s += (dx - dx/2) + 2 * dx;
+				x2s += (dx - dx/2);
+				MoveToEx(hdc, x1s, y1s, null);
+				LineTo(hdc, x2s, y2s);
+
+				/*  O- */
+				y1s = y2s = cursory;
+				MoveToEx(hdc, x1s, y1s, null);
+				LineTo(hdc, x2s, y2s);
+
+				/*   /
+				 *  O
+				 */
+				y1s -= dy/2 + 2 * dy;
+				y2s -= dy/2;
+				MoveToEx(hdc, x1s, y1s, null);
+				LineTo(hdc, x2s, y2s);
+
+				/*  |
+				 *  O
+				 */
+				x1s = x2s = cursorx;
+				MoveToEx(hdc, x1s, y1s, null);
+				LineTo(hdc, x2s, y2s);
 			}
-			LineTo(hdc, x, y);
-		    }
-		    LineTo(hdc, x2, y2);
-		    DeleteObject(hPen);
-		}
+
+			// Do the move mode graphic
+			if (global.player && global.player.mode == mdTO)
+			{
+				HPEN hPen;
+				int x1s, y1s, x2s, y2s;
+
+				x1s = LocToX(global.player.frmloc);
+				y1s = LocToY(global.player.frmloc);
+				x2s = LocToX(global.player.curloc);
+				y2s = LocToY(global.player.curloc);
+				MoveToEx(hdc, x1s, y1s, null);
+				if (x1s != x2s && y1s != y2s)
+				{
+					int x, y;
+					int ax, ay;
+
+					ax = abs(x1s - x2s);
+					ay = abs(y1s - y2s);
+					if (ax < ay)
+					{
+						x = x2s;
+						if (y1s < y2s)
+						y = y1s + ax;
+						else
+						y = y1s - ax;
+					}
+					else
+					{
+						if (x1s < x2s)
+						x = x1s + ay;
+						else
+						x = x1s - ay;
+						y = y2s;
+					}
+					LineTo(hdc, x, y);
+				}
+				LineTo(hdc, x2s, y2s);
+			}
 
 	      LpaintText:
 		if (clipbox.bottom > global.text.top &&
@@ -928,8 +925,13 @@ version(none)
 	    DeleteObject(global.sectorRegion);
 	    DeleteObject(global.textRegion);
 
-	    PostQuitMessage (0);
-	    return 0;
+		hdc = GetDC(hwnd);
+		SelectObject(hdc, global.originalPen);
+		ReleaseDC(hwnd, hdc);
+		DeleteObject(global.dashedPen);
+
+		PostQuitMessage (0);
+		return 0;
 
 	default:
 	    break;
