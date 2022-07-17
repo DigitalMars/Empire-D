@@ -1,18 +1,35 @@
-//_ winmain.d   Tue Nov 05 2002 */
-// Copyright (c) 2002-2004 by Walter Bright
-// All Rights Reserved
-// Compile with Digital Mars compiler www.digitalmars.com
-// www.classicempire.com
+/*
+ * Empire, the Wargame of the Century (tm)
+ * Copyright (C) 1978-2004 by Walter Bright
+ * All Rights Reserved
+ *
+ * You may use this source for personal use only. To use it commercially
+ * or to distribute source or binaries of Empire, please contact
+ * www.digitalmars.com.
+ *
+ * Written by Walter Bright.
+ * Modified by Stewart Gordon.
+ * This source is written in the D Programming Language.
+ * See www.digitalmars.com/d/ for the D specification and compiler.
+ *
+ * Use entirely at your own risk. There is no warranty, expressed or implied.
+ */
 
+module winmain;
 import std.c.stdlib;
+import std.c.stdio;
 import std.c.windows.windows;
+import std.math;
+import std.string;
 
 import empire;
 import winemp;
 import eplayer;
-import display;
+import newdisplay;
 import twin;
 import init;
+import move;
+import var;
 
 /********************************************************/
 extern (C) void gc_init();
@@ -28,29 +45,28 @@ int WinMain(HINSTANCE hInstance,
 	LPSTR lpCmdLine,
 	int nCmdShow)
 {
-    int result;
+	int result;
 
-    gc_init();			// initialize garbage collector
-    _minit();			// initialize module constructor table
+	gc_init();			// initialize garbage collector
+	_minit();			// initialize module constructor table
 
-    try
-    {
-	_moduleCtor();		// call module constructors
-	_moduleUnitTests();	// run unit tests (optional)
+	try
+	{
+		_moduleCtor();		// call module constructors
+		_moduleUnitTests();	// run unit tests (optional)
 
-	// insert user code here
-	result = doit(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
-    }
+		// insert user code here
+		result = doit(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
+	}
+	catch (Object o)		// catch any uncaught exceptions
+	{
+		MessageBoxA(null, cast(char*) o.toString(), "Error",
+				MB_OK | MB_ICONEXCLAMATION);
+		result = 0;		// failed
+	}
 
-    catch (Object o)		// catch any uncaught exceptions
-    {
-	MessageBoxA(null, cast(char *)o.toString(), "Error",
-		    MB_OK | MB_ICONEXCLAMATION);
-	result = 0;		// failed
-    }
-
-    gc_term();			// run finalizers; terminate garbage collector
-    return result;
+	gc_term();			// run finalizers; terminate garbage collector
+	return result;
 }
 /********************************************************/
 
@@ -60,36 +76,35 @@ int WinMain(HINSTANCE hInstance,
 
 struct Global
 {
-    HANDLE hinst;	// instance of entire program program
-    HWND hwnd;		// handle of main window
+	HANDLE hinst;	// instance of entire program program
+	HWND hwnd;		// handle of main window
 
-    int inited;		// !=0 means game is initialized
-    HANDLE hSplash;	// handle for splash screen .bmp
+	int inited;		// !=0 means game is initialized
+	HANDLE hSplash;	// handle for splash screen .bmp
 
 	// City Select
 	int phase;
 	int newphase;
 
-    // Init
-    int numplayers;
-    int newnumplayers;
-    int demo;
-    DLGPROC lpfnInitDlgProc ;
+	// Init
+	int numplayers;
+	int newnumplayers;
+	int demo;
 
-    int speaker;	// !=0 means sound is on
+	int speaker;	// !=0 means sound is on
 
-    // Menu
-    HMENU hMenu;
+	// Menu
+	HMENU hMenu;
 
 	OPENFILENAMEA ofn;	// open file
 	OPENFILENAMEA sfn;	// save file
 
-    double scalex;	// zoom factor
-    double scaley;	// zoom factor
+	double scalex;	// zoom factor
+	double scaley;	// zoom factor
 
-    // Font
-    HFONT  hFont;
-    short cxChar, cxCaps, cyChar;
+	// Font
+	HFONT  hFont;
+	short cxChar, cxCaps, cyChar;
 
 	// Pen
 	//HPEN borderPen;
@@ -100,27 +115,27 @@ struct Global
 	HANDLE[MAPMAX] mapvaltab;
 	HANDLE unknown10;
 
-    Player *player;	// which player is being displayed
-    ubyte *map;		// which map is being displayed
-    loc_t ulcorner;	// upper left corner
-    loc_t cursor;	// location of cursor
-    HANDLE hCursor;	// bitmap of cursor
-    int offsetx;
-    int offsety;
+	Player* player; // which player is being displayed
+	ubyte* map;     // which map is being displayed
+	loc_t ulcorner; // upper left corner
+	loc_t cursor;   // location of cursor
+	HANDLE hCursor; // bitmap of cursor
+	int offsetx;
+	int offsety;
 
-    // Window size
-    int cxClient, cyClient;
+	// Window size
+	int cxClient, cyClient;
 
-    // Clipping rectangles
-    RECT sector;
-    RECT text;
+	// Clipping rectangles
+	RECT sector;
+	RECT text;
 
-    HRGN sectorRegion;
-    HRGN textRegion;
+	HRGN sectorRegion;
+	HRGN textRegion;
 
-    // Sector size
-    int pixelx;
-    int pixely;
+	// Sector size
+	int pixelx;
+	int pixely;
 
 	// Blast
 	HANDLE hBlast;      // bitmap of blast
@@ -137,52 +152,52 @@ Global global;
 
 
 int doit(HANDLE hInstance, HANDLE hPrevInstance,
-                    LPSTR lpszCmdLine, int nCmdShow)
+					LPSTR lpszCmdLine, int nCmdShow)
 {
 	static char[] szAppName = "Empire";
 	HWND     hwnd;
 	MSG      msg;
 	WNDCLASS wndclass;
 
-    if (!hPrevInstance) 
-    {
-        wndclass.style         = CS_HREDRAW | CS_VREDRAW;
-        wndclass.lpfnWndProc   = &WndProc;
-        wndclass.cbClsExtra    = 0;
-        wndclass.cbWndExtra    = 0;
-        wndclass.hInstance     = hInstance;
-        wndclass.hIcon         = LoadIconA(hInstance, "About");
-        wndclass.hCursor       = LoadCursorA (null, IDC_ARROW);
-        wndclass.hbrBackground = GetStockObject (WHITE_BRUSH);
-        wndclass.lpszMenuName  = szAppName;
-        wndclass.lpszClassName = szAppName;
+	if (!hPrevInstance)
+	{
+		wndclass.style         = CS_HREDRAW | CS_VREDRAW;
+		wndclass.lpfnWndProc   = &WndProc;
+		wndclass.cbClsExtra    = 0;
+		wndclass.cbWndExtra    = 0;
+		wndclass.hInstance     = hInstance;
+		wndclass.hIcon         = LoadIconA(hInstance, "About");
+		wndclass.hCursor       = LoadCursorA (null, IDC_ARROW);
+		wndclass.hbrBackground = GetStockObject (WHITE_BRUSH);
+		wndclass.lpszMenuName  = szAppName;
+		wndclass.lpszClassName = szAppName;
 
-        RegisterClassA(&wndclass);
+		RegisterClassA(&wndclass);
 
-	helpRegister(hInstance);
-    }
+		helpRegister(hInstance);
+	}
 
-    global.hinst = hInstance;
+	global.hinst = hInstance;
 
-version(none)
-{
-    hwnd = CreateWindowA(szAppName, "Empire: Wargame of the Century",
-                        WS_OVERLAPPEDWINDOW,
-                          CW_USEDEFAULT, CW_USEDEFAULT,
-                          124, 160 + 34 + 20,
-                          null, null, hInstance, null);
-}
-else
-{
-    hwnd = CreateWindowA(szAppName, "Empire: Wargame of the Century",
-			WS_OVERLAPPEDWINDOW,
-                          CW_USEDEFAULT, CW_USEDEFAULT,
-                          CW_USEDEFAULT, CW_USEDEFAULT,
-                          null, null, hInstance, null);
-}
+	version(none)
+	{
+		hwnd = CreateWindowA(szAppName, "Empire: Wargame of the Century",
+				WS_OVERLAPPEDWINDOW,
+				CW_USEDEFAULT, CW_USEDEFAULT,
+				124, 160 + 34 + 20,
+				null, null, hInstance, null);
+	}
+	else
+	{
+		hwnd = CreateWindowA(szAppName, "Empire: Wargame of the Century",
+				WS_OVERLAPPEDWINDOW,
+				CW_USEDEFAULT, CW_USEDEFAULT,
+				CW_USEDEFAULT, CW_USEDEFAULT,
+				null, null, hInstance, null);
+	}
 
-    ShowWindow (hwnd, nCmdShow);
-    UpdateWindow(hwnd);
+	ShowWindow(hwnd, nCmdShow);
+	UpdateWindow(hwnd);
 
 	while (true)
 	{
@@ -204,116 +219,99 @@ else
 	return msg.wParam;
 }
 
-void DrawBitmap(HDC hdc, short xStart, short yStart, HBITMAP hBitmap, double scalex, double scaley, DWORD mode)
+void DrawBitmap(HDC hdc, short xStart, short yStart, HBITMAP hBitmap,
+  double scalex, double scaley, DWORD mode)
 {
-    // Petzold pg. 631 has a different version
+	// Petzold pg. 631 has a different version
 
-    BITMAP bm;
-    HDC    hMemDC;
-    POINT  pt;
+	BITMAP bm;
+	HDC    hMemDC;
+	POINT  pt;
 
-    //PRINTF("scalex = %g, scaley = %g\n", scalex, scaley);
-    hMemDC = CreateCompatibleDC(hdc);
-    SelectObject(hMemDC, hBitmap);
-    GetObjectA(hBitmap, BITMAP.sizeof, cast(LPSTR) &bm);
-    pt.x = bm.bmWidth;
-    pt.y = bm.bmHeight;
+	//PRINTF("scalex = %g, scaley = %g\n", scalex, scaley);
+	hMemDC = CreateCompatibleDC(hdc);
+	SelectObject(hMemDC, hBitmap);
+	GetObjectA(hBitmap, BITMAP.sizeof, cast(LPSTR) &bm);
+	pt.x = bm.bmWidth;
+	pt.y = bm.bmHeight;
 
-    //BitBlt (hdc, xStart, yStart, pt.x, pt.y, hMemDC, 0, 0, mode);
-    StretchBlt(hdc, xStart, yStart,
+	//BitBlt (hdc, xStart, yStart, pt.x, pt.y, hMemDC, 0, 0, mode);
+	StretchBlt(hdc, xStart, yStart,
 		cast(int) (pt.x * scalex + .99), cast(int) (pt.y * scaley + .99),
 		hMemDC, 0, 0, pt.x, pt.y, mode);
 
-    DeleteDC(hMemDC);
+	DeleteDC(hMemDC);
 }
 
 extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
-                             LPARAM lParam)
+					         LPARAM lParam)
 {
-    HANDLE        hBitmap;
-    HDC           hdc;
-    PAINTSTRUCT   ps;
-    POINT	  point;
-    TEXTMETRICA	  tm;
-    int i;
-    int j;
-    int ch;
-    static LOGFONTA logfont;
-    double newscalex;
-    double newscaley;
+	HANDLE		hBitmap;
+	HDC			hdc;
+	PAINTSTRUCT	ps;
+	POINT		point;
+	TEXTMETRICA	tm;
+	int i;
+	int j;
+	int ch;
+	static LOGFONTA logfont;
+	double newscalex;
+	double newscaley;
 
 	// File dialog box
 	static char[_MAX_PATH] szFileName;
 	static char[_MAX_FNAME + _MAX_EXT] szTitleName;
 	static char*[] szFilter = [ "Empire Files (*.EMP)", "*.emp", "" ];
 
-    switch (message)
-    {
+	switch (message)
+	{
 	case WM_CREATE:
-	    global.speaker = 1;
+		global.speaker = 1;
 
-	    global.cxClient = 120;
-	    global.cyClient = 160;
+		global.cxClient = 120;
+		global.cyClient = 160;
 
-	    global.pixelx = 120;
-	    global.pixely = 120;
+		global.pixelx = 120;
+		global.pixely = 120;
 
-	    global.hwnd = hwnd;
-	    global.scalex = 1.0;
-	    global.scaley = 1.0;
-	    global.numplayers = IDD_FOUR;
-	    global.map = .map;
-	    global.offsetx = 0;
-	    global.offsety = 0;
+		global.hwnd = hwnd;
+		global.scalex = 1.0;
+		global.scaley = 1.0;
+		global.numplayers = IDD_FOUR;
+		global.map = .map;
+		global.offsetx = 0;
+		global.offsety = 0;
 
-	    // Clipping rectangles
-	    global.text.left = 0;
-	    global.text.top = 0;
-	    global.text.right = global.pixelx;
-	    global.text.bottom = 40;
+		// Clipping rectangles
+		global.text.left = 0;
+		global.text.top = 0;
+		global.text.right = global.pixelx;
+		global.text.bottom = 40;
 
-	    global.sector.left = 0;
-	    global.sector.top = 40;
-	    global.sector.right = global.pixelx;
-	    global.sector.bottom = global.sector.top + global.pixely;
+		global.sector.left = 0;
+		global.sector.top = 40;
+		global.sector.right = global.pixelx;
+		global.sector.bottom = global.sector.top + global.pixely;
 
-	    global.sectorRegion = CreateRectRgn(global.sector.left, global.sector.top, global.sector.right, global.sector.bottom);
-	    global.textRegion = CreateRectRgn(global.text.left, global.text.top, global.text.right, global.text.bottom);
+		global.sectorRegion = CreateRectRgn(global.sector.left, global.sector.top, global.sector.right, global.sector.bottom);
+		global.textRegion = CreateRectRgn(global.text.left, global.text.top, global.text.right, global.text.bottom);
 
-	    // About dialog box
-	    //hInstance = ((LPCREATESTRUCT) lParam)->hInstance;
+		// About dialog box
+		//hInstance = ((LPCREATESTRUCT) lParam)->hInstance;
 
-	    version (0)
-	    {
-		global.lpfnAboutDlgProc = cast(DLGPROC) &AboutDlgProc;
-		global.lpfnCitySelectDlgProc = cast(DLGPROC) &CitySelectDlgProc;
-		global.lpfnInitDlgProc = cast(DLGPROC) &InitDlgProc;
-	    }
-	    else
-	    {
-		global.lpfnAboutDlgProc = cast(DLGPROC) MakeProcInstance (cast(FARPROC) AboutDlgProc,
-						    global.hinst);
+		// Menu
+		global.hMenu = LoadMenuA(global.hinst, "PopMenu");
+		global.hMenu = GetSubMenu(global.hMenu, 0);
 
-		global.lpfnCitySelectDlgProc = cast(DLGPROC) MakeProcInstance (cast(FARPROC) CitySelectDlgProc,
-						    global.hinst);
-
-		global.lpfnInitDlgProc = cast(DLGPROC) MakeProcInstance (cast(FARPROC) InitDlgProc,
-						    global.hinst) ;
-	    }
-
-	    // Menu
-	    global.hMenu = LoadMenuA(global.hinst, "PopMenu");
-	    global.hMenu = GetSubMenu(global.hMenu, 0);
-
-	    // File dialog box
-	    global.ofn.lStructSize       = OPENFILENAMEA.sizeof;
-	    global.ofn.hwndOwner         = hwnd;
-	    global.ofn.lpstrFilter       = szFilter[0];
-	    global.ofn.lpstrFile         = szFileName;
-	    global.ofn.nMaxFile          = _MAX_PATH;
-	    global.ofn.lpstrFileTitle    = szTitleName;
-	    global.ofn.nMaxFileTitle     = _MAX_FNAME + _MAX_EXT;
-	    global.ofn.lpstrDefExt       = "emp";
+		// File dialog box
+		global.ofn.lStructSize       = OPENFILENAMEA.sizeof;
+		global.ofn.hwndOwner         = hwnd;
+		global.ofn.lpstrFilter       = szFilter[0];
+		global.ofn.lpstrFile         = szFileName;
+		global.ofn.nMaxFile          = _MAX_PATH;
+		global.ofn.lpstrFileTitle    = szTitleName;
+		global.ofn.nMaxFileTitle     = _MAX_FNAME + _MAX_EXT;
+		global.ofn.lpstrDefExt       = "emp";
 
 		szFileName[] = '\0';
 		szTitleName[] = '\0';
@@ -336,7 +334,7 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 		global.hBlast = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_BLAST));
 		global.hBlastmask = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_BLASTMASK));
 
-	    hdc = GetDC(hwnd);
+		hdc = GetDC(hwnd);
 
 		//global.borderPen = CreatePen(PS_SOLID, dx/3+2, RGB(255, 0, 0));
 		global.dashedPen = CreatePen(PS_DASH, 0, RGB(255, 255, 255));
@@ -347,70 +345,72 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 		global.hFont = CreateFontIndirectA(&logfont);
 		SelectObject(hdc, global.hFont);
 
-	    GetTextMetricsA(hdc, &tm);
-	    global.cxChar = tm.tmAveCharWidth;
-	    global.cxCaps = (tm.tmPitchAndFamily & 1 ? 3 : 2) * global.cxChar / 2;
-	    global.cyChar = tm.tmHeight + tm.tmExternalLeading;
+		GetTextMetricsA(hdc, &tm);
+		global.cxChar = tm.tmAveCharWidth;
+		global.cxCaps = (tm.tmPitchAndFamily & 1 ? 3 : 2) * global.cxChar / 2;
+		global.cyChar = tm.tmHeight + tm.tmExternalLeading;
 
-	    ReleaseDC(hwnd, hdc);
-	    return 0;
+		ReleaseDC(hwnd, hdc);
+		return 0;
 
 	case WM_SIZE:
-	    global.cyClient = HIWORD(lParam);
-	    global.cxClient = LOWORD(lParam);
-	    //PRINTF("cxClient = %d, cyClient = %d\n", global.cxClient, global.cyClient);
+		global.cyClient = HIWORD(lParam);
+		global.cxClient = LOWORD(lParam);
+		//PRINTF("cxClient = %d, cyClient = %d\n", global.cxClient, global.cyClient);
 
-	    global.pixelx = global.cxClient;
-	    if (global.pixelx < 120)
-		global.pixelx = 120;
-	    if (global.pixelx > (Mcolmx + 1) * 10)
-		global.pixelx = (Mcolmx + 1) * 10;
-	    if (global.pixelx / cast(int)(10 * global.scalex) < 5)
-	    {
-		global.scalex = global.pixelx / (10 * 5.0);
-		global.scaley = global.scalex;
-	    }
+		global.pixelx = global.cxClient;
+		if (global.pixelx < 120)
+			global.pixelx = 120;
+		if (global.pixelx > (Mcolmx + 1) * 10)
+			global.pixelx = (Mcolmx + 1) * 10;
+		if (global.pixelx / cast(int) (10 * global.scalex) < 5)
+		{
+			global.scalex = global.pixelx / (10 * 5.0);
+			global.scaley = global.scalex;
+		}
 
-	    global.pixely = global.cyClient - 40;
-	    if (global.pixely < 120)
-		global.pixely = 120;
-	    if (global.pixely > (Mrowmx + 1) * 10)
-		global.pixely = (Mrowmx + 1) * 10;
-	    if (global.pixely / cast(int)(10 * global.scaley) < 5)
-	    {
-		global.scaley = global.pixely / (10 * 5.0);
-		global.scalex = global.scaley;
-	    }
+		global.pixely = global.cyClient - 40;
+		if (global.pixely < 120)
+			global.pixely = 120;
+		if (global.pixely > (Mrowmx + 1) * 10)
+			global.pixely = (Mrowmx + 1) * 10;
+		if (global.pixely / cast(int) (10 * global.scaley) < 5)
+		{
+			global.scaley = global.pixely / (10 * 5.0);
+			global.scalex = global.scaley;
+		}
 
-	    global.text.right = global.pixelx;
-	    global.sector.right = global.pixelx;
-	    global.sector.bottom = global.sector.top + global.pixely;
+		global.text.right = global.pixelx;
+		global.sector.right = global.pixelx;
+		global.sector.bottom = global.sector.top + global.pixely;
 
-	    SetRectRgn(global.sectorRegion, global.sector.left, global.sector.top, global.sector.right, global.sector.bottom);
-	    SetRectRgn(global.textRegion, global.text.left, global.text.top, global.text.right, global.text.bottom);
+		SetRectRgn(global.sectorRegion, global.sector.left, global.sector.top, global.sector.right, global.sector.bottom);
+		SetRectRgn(global.textRegion, global.text.left, global.text.top, global.text.right, global.text.bottom);
 
-	    if (global.inited && global.player)
-	    {	Display *d = global.player.display;
+		if (global.inited && global.player)
+		{
+			//Display* d = global.player.display;
+			NewDisplay d = global.player.display;
 
-		d.secbas = -1;
-		d.setdispsize(d.text.nrows, d.text.ncols);
-		d.text.clear();
-		adjSector(global.scalex, global.scaley);
-	    }
+			d.secbas = -1;
+			//d.setdispsize(d.text.nrows, d.text.ncols);
+			//d.text.clear();
+			adjSector(global.scalex, global.scaley);
+		}
 
-	    return 0;
+		return 0;
 
 	//case WM_LBUTTONDOWN:
 	case WM_RBUTTONDOWN:
-	    point.x = lParam & 0xFFFF;
-	    point.y = (lParam >> 16) & 0xFFFF;
-	    ClientToScreen(hwnd, &point);
-	    TrackPopupMenu(global.hMenu, 0, point.x, point.y, 0, hwnd, null);
-	    return 0;
+		point.x = lParam & 0xFFFF;
+		point.y = (lParam >> 16) & 0xFFFF;
+		ClientToScreen(hwnd, &point);
+		TrackPopupMenu(global.hMenu, 0, point.x, point.y, 0, hwnd, null);
+		return 0;
 
 	case WM_COMMAND:
-	    switch (wParam)
-	    {
+		switch (wParam)
+		{
 		case IDM_NEW:		// start new game
 			if (promptSave(hwnd) &&
 				  DialogBoxParamA(global.hinst, "InitBox", hwnd,
@@ -466,8 +466,8 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 			return 0;
 
 		case IDM_SOUND:
-		    global.speaker ^= 1;
-		    return 0;
+			global.speaker ^= 1;
+			return 0;
 
 		case IDM_ABOUT:
 			DialogBoxParamA(global.hinst, "AboutBox", hwnd,
@@ -475,62 +475,62 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 			return 0;
 
 		case IDM_HELP:
-		    help(global.hinst);
-		    return 0;
+			help(global.hinst);
+			return 0;
 
 		case IDM_ZOOMIN:
-		    goto Lzoomin;
+			goto Lzoomin;
 
 		case IDM_ZOOMOUT:
-		    goto Lzoomout;
+			goto Lzoomout;
 
-		case IDM_F:    ch = 'F';	goto Linsert;
-		case IDM_G:    ch = 'G';	goto Linsert;
-		case IDM_H:    ch = 'H';	goto Linsert;
-		case IDM_I:    ch = 'I';	goto Linsert;
-		case IDM_K:    ch = 'K';	goto Linsert;
-		case IDM_L:    ch = 'L';	goto Linsert;
-		case IDM_N:    ch = 'N';	goto Linsert;
-		case IDM_P:    ch = 'P';	goto Linsert;
-		case IDM_R:    ch = 'R';	goto Linsert;
-		case IDM_S:    ch = 'S';	goto Linsert;
-		case IDM_U:    ch = 'U';	goto Linsert;
-		case IDM_Y:    ch = 'Y';	goto Linsert;
-		case IDM_ESC:  ch = ESC;	goto Linsert;
-		case IDM_FASTER:    ch = '<';	goto Linsert;
-		case IDM_SLOWER:    ch = '>';	goto Linsert;
+		case IDM_F:      ch = 'F';	goto Linsert;
+		case IDM_G:      ch = 'G';	goto Linsert;
+		case IDM_H:      ch = 'H';	goto Linsert;
+		case IDM_I:      ch = 'I';	goto Linsert;
+		case IDM_K:      ch = 'K';	goto Linsert;
+		case IDM_L:      ch = 'L';	goto Linsert;
+		case IDM_N:      ch = 'N';	goto Linsert;
+		case IDM_P:      ch = 'P';	goto Linsert;
+		case IDM_R:      ch = 'R';	goto Linsert;
+		case IDM_S:      ch = 'S';	goto Linsert;
+		case IDM_U:      ch = 'U';	goto Linsert;
+		case IDM_Y:      ch = 'Y';	goto Linsert;
+		case IDM_ESC:    ch = ESC;	goto Linsert;
+		case IDM_FASTER: ch = '<';	goto Linsert;
+		case IDM_SLOWER: ch = '>';	goto Linsert;
 		case IDM_POV:    ch = 'O';	goto Linsert;
 
 		default:
-		    break;
-	    }
-	    break;
+			break;
+		}
+		break;
 
 	case WM_CHAR:
-	    switch (wParam)
-	    {
-version(none)
-{
-		case 'c':
-		    DialogBoxParamA(global.hinst, "CitySelectBox", hwnd,
-				    global.lpfnCitySelectDlgProc, 0) ;
-		    return 0;
-}
+		switch (wParam)
+		{
+		version(none)
+		{
+			case 'c':
+				DialogBoxParamA(global.hinst, "CitySelectBox", hwnd,
+						global.lpfnCitySelectDlgProc, 0);
+				return 0;
+		}
 
 		case 'j':
 		case 'J':
-		    global.speaker ^= 1;
-		    return 0;
+			global.speaker ^= 1;
+			return 0;
 
 		case 12:
-		    InvalidateRect(hwnd, null, true);
-		    break;
+			InvalidateRect(hwnd, null, true);
+			break;
 
 		default:
-		    ch = wParam;
+			ch = wParam;
 		Linsert:
-		    // Insert into buffer of player we are watching
-		    Player *p;
+			// Insert into buffer of player we are watching
+			Player* p;
 
 			for (int iPly = 1; iPly <= numply; iPly++)
 			{
@@ -553,38 +553,38 @@ version(none)
 		return 0;
 
 	case WM_KEYDOWN:
-	    switch (wParam)
-	    {
+		switch (wParam)
+		{
 		case VK_ADD:
 		Lzoomin:
-		    newscalex = global.scalex * 1.125;
-		    newscaley = global.scaley * 1.125;
-		    if (global.pixelx / cast(int)(10 * newscalex) >= 5)
-		    {
-			if (newscalex < newscaley)
-			    newscaley = global.scaley;
-			else
-			    newscaley = newscalex;
-			goto Lnew;
-		    }
-		    return 0;
+			newscalex = global.scalex * 1.125;
+			newscaley = global.scaley * 1.125;
+			if (global.pixelx / cast(int) (10 * newscalex) >= 5)
+			{
+				if (newscalex < newscaley)
+					newscaley = global.scaley;
+				else
+					newscaley = newscalex;
+				goto Lnew;
+			}
+			return 0;
 
 		case VK_SUBTRACT:
 		Lzoomout:
-		    newscalex = global.scalex / 1.125;
-		    newscaley = global.scaley / 1.125;
-		    if (global.pixelx / cast(int)(10 * newscalex) <= (Mcolmx + 1))
-		    {
-		        if (global.pixely / cast(int)(10 * newscaley) > (Mrowmx + 1))
-			    newscaley = global.scaley;
-			//PRINTF("newscale x,y = %g, %g\n", newscalex, newscaley);
-		      Lnew:
+			newscalex = global.scalex / 1.125;
+			newscaley = global.scaley / 1.125;
+			if (global.pixelx / cast(int) (10 * newscalex) <= (Mcolmx + 1))
+			{
+				if (global.pixely / cast(int) (10 * newscaley) > (Mrowmx + 1))
+				newscaley = global.scaley;
+				//PRINTF("newscale x,y = %g, %g\n", newscalex, newscaley);
+			Lnew:
 
-			adjSector(newscalex, newscaley);
+				adjSector(newscalex, newscaley);
 
-			InvalidateRect(hwnd, &global.sector, false);
-		    }
-		    return 0;
+				InvalidateRect(hwnd, &global.sector, false);
+			}
+			return 0;
 
 		case VK_PRIOR:	// PgUp
 		case VK_NEXT:	// PgDn
@@ -593,19 +593,20 @@ version(none)
 		case VK_RIGHT:
 		case VK_UP:
 		case VK_DOWN:
-		    return 0;
+			return 0;
 
 		default:
-		    break;
-	    }
-	    break;
+			break;
+		}
+		break;
 
 	case WM_PAINT:
-	    //PRINTF("+WM_PAINT\n");
-	    hdc = BeginPaint (hwnd, &ps);
+		//PRINTF("+WM_PAINT\n");
+		hdc = BeginPaint (hwnd, &ps);
 
-	    if (!global.inited || !global.player)
-	    {	double sx, sy;
+		if (!global.inited || !global.player)
+		{
+			double sx, sy;
 
 			version (0)
 			{
@@ -641,13 +642,13 @@ version(none)
 			DWORD mode;
 			RECT clipbox;
 
-		GetClipBox(hdc, &clipbox);
-		//PRINTF("sector : %2d,%2d %2d,%2d\n", global.sector.left, global.sector.top, global.sector.right, global.sector.bottom);
-		//PRINTF("clipbox: %2d,%2d %2d,%2d\n", clipbox.left, clipbox.top, clipbox.right, clipbox.bottom);
-		if (clipbox.bottom < global.sector.top)
-		    goto LpaintText;
+			GetClipBox(hdc, &clipbox);
+			//PRINTF("sector : %2d,%2d %2d,%2d\n", global.sector.left, global.sector.top, global.sector.right, global.sector.bottom);
+			//PRINTF("clipbox: %2d,%2d %2d,%2d\n", clipbox.left, clipbox.top, clipbox.right, clipbox.bottom);
+			if (clipbox.bottom < global.sector.top)
+				goto LpaintText;
 
-		SelectClipRgn(hdc, global.sectorRegion);
+			SelectClipRgn(hdc, global.sectorRegion);
 
 			r = ROW(global.ulcorner);
 			c = COL(global.ulcorner);
@@ -673,21 +674,21 @@ version(none)
 			{
 				int y;
 
-		    y = global.sector.top + (j - r) * dy - global.offsety;
-		    if (y >= clipbox.bottom ||
-			y + dy < clipbox.top)
-			continue;
+				y = global.sector.top + (j - r) * dy - global.offsety;
+				if (y >= clipbox.bottom ||
+					  y + dy < clipbox.top)
+					continue;
 
-		    for (i = c; i < cmax; i++)
-		    {
-			loc_t loc = j * (Mcolmx + 1) + i;
-			HANDLE h;
-			int x;
+				for (i = c; i < cmax; i++)
+				{
+					loc_t loc = j * (Mcolmx + 1) + i;
+					HANDLE h;
+					int x;
 
-			x =  (i - c) * dx - global.offsetx;
-			if (x >= clipbox.right ||
-			    x + dx < clipbox.left)
-			    continue;
+					x =  (i - c) * dx - global.offsetx;
+					if (x >= clipbox.right ||
+						x + dx < clipbox.left)
+						continue;
 
 					h = global.mapvaltab[global.map[loc]];
 					if ((j % 10) == 0 && (i % 10) == 0 &&
@@ -729,12 +730,12 @@ version(none)
 			SelectObject(hdc, global.dashedPen);
 			DeleteObject(borderPen);
 
-		// Do the blast graphic
-		if (global.blastState)
-		{
-		    DrawBitmap(hdc, global.blastx, global.blasty, global.hBlastmask, 1.0, 1.0, SRCAND);
-		    DrawBitmap(hdc, global.blastx, global.blasty, global.hBlast, 1.0, 1.0, SRCPAINT);
-		}
+			// Do the blast graphic
+			if (global.blastState)
+			{
+				DrawBitmap(hdc, global.blastx, global.blasty, global.hBlastmask, 1.0, 1.0, SRCAND);
+				DrawBitmap(hdc, global.blastx, global.blasty, global.hBlast, 1.0, 1.0, SRCPAINT);
+			}
 
 			// Do the survey mode graphic
 			if (global.player && global.player.mode == mdSURV)
@@ -879,27 +880,36 @@ version(none)
 				LineTo(hdc, x2s, y2s);
 			}
 
-	      LpaintText:
-		if (clipbox.bottom > global.text.top &&
-		    clipbox.top < global.text.bottom)
-		{
-		    // Do the text box
-		    SelectClipRgn(hdc, global.textRegion);
+			  LpaintText:
+			if (clipbox.bottom > global.text.top &&
+				clipbox.top < global.text.bottom)
+			{
+				// Do the text box
+				SelectClipRgn(hdc, global.textRegion);
 
-		    // Fill background
-		    FillRect(hdc, &global.text, GetStockObject(WHITE_BRUSH));
+				// Fill background
+				FillRect(hdc, &global.text, GetStockObject(WHITE_BRUSH));
 
-		    SelectObject(hdc, global.hFont);
-		    for (i = 0; i < 4; i++)
-		    {
-			TextOutA(hdc, 0, global.cyChar * i, vbuffer[i], strlen(vbuffer[i]));
-		    }
+				int col2 = global.text.right * 2 / 3;
+				int col3 = global.text.right * 5 / 6;
+
+				SelectObject(hdc, global.hFont);
+				StatusPanel sp = global.player.display.panel;
+				for (i = 0; i < 4; i++)
+				{
+					//TextOutA(hdc, 0, global.cyChar * i, vbuffer[i], strlen(vbuffer[i]));
+					TextOutA(hdc, 0, global.cyChar * i, sp[i], sp[i].length);
+					TextOutA(hdc, col2, global.cyChar * i,
+					  sp[i | 4], sp[i | 4].length);
+					TextOutA(hdc, col3, global.cyChar * i,
+					  sp[i | 8], sp[i | 8].length);
+				}
+			}
 		}
-	    }
 
-	    EndPaint (hwnd, &ps);
-	    //PRINTF("-WM_PAINT\n");
-	    return 0;
+		EndPaint (hwnd, &ps);
+		//PRINTF("-WM_PAINT\n");
+		return 0;
 
 	case WM_CLOSE:
 		if (promptSave(hwnd)) DestroyWindow(hwnd);
@@ -910,20 +920,20 @@ version(none)
 
 	case WM_DESTROY:
 
-	    for (i = 0; i < MAPMAX; i++)
-	    {
-		if (global.mapvaltab[i])
-		    DeleteObject(global.mapvaltab[i]);
-	    }
+		for (i = 0; i < MAPMAX; i++)
+		{
+			if (global.mapvaltab[i])
+				DeleteObject(global.mapvaltab[i]);
+		}
 
-	    DeleteObject(global.unknown10);
-	    DeleteObject(global.hBlast);
-	    DeleteObject(global.hBlastmask);
-	    DeleteObject(global.hSplash);
-	    DeleteObject(global.hCursor);
-	    DeleteObject(global.hFont);
-	    DeleteObject(global.sectorRegion);
-	    DeleteObject(global.textRegion);
+		DeleteObject(global.unknown10);
+		DeleteObject(global.hBlast);
+		DeleteObject(global.hBlastmask);
+		DeleteObject(global.hSplash);
+		DeleteObject(global.hCursor);
+		DeleteObject(global.hFont);
+		DeleteObject(global.sectorRegion);
+		DeleteObject(global.textRegion);
 
 		hdc = GetDC(hwnd);
 		SelectObject(hdc, global.originalPen);
@@ -934,9 +944,9 @@ version(none)
 		return 0;
 
 	default:
-	    break;
-    }
-    return DefWindowProcA(hwnd, message, wParam, lParam);
+		break;
+	}
+	return DefWindowProcA(hwnd, message, wParam, lParam);
 }
 
 
@@ -1001,27 +1011,27 @@ bool promptSave(HWND hwnd) {
  */
 
 extern (Windows) BOOL AboutDlgProc (HWND hDlg, uint message, uint wParam,
-                                                               LONG lParam)
+					                                           LONG lParam)
 {
-    switch (message)
-    {
-        case WM_INITDIALOG:
-            return true ;
+	switch (message)
+	{
+		case WM_INITDIALOG:
+			return true;
 
-        case WM_COMMAND:
-            switch (wParam)
-            {
-		case IDOK:
-		case IDCANCEL:
-                    EndDialog (hDlg, 0) ;
-		    return true ;
-            }
-            break ;
+		case WM_COMMAND:
+			switch (wParam)
+			{
+				case IDOK:
+				case IDCANCEL:
+					EndDialog (hDlg, 0);
+					return true;
+			}
+			break;
 
-	default:
-	    break;
-    }
-    return false ;
+		default:
+			break;
+	}
+	return false;
 }
 
 /********************************************
@@ -1029,130 +1039,130 @@ extern (Windows) BOOL AboutDlgProc (HWND hDlg, uint message, uint wParam,
  */
 
 extern (Windows) BOOL CitySelectDlgProc(HWND hDlg, uint message, uint wParam,
-                                                               LONG lParam)
+					                                           LONG lParam)
 {
-    static HWND hSensor;
-    static HWND hTile;
-    BOOL result = false;
+	static HWND hSensor;
+	static HWND hTile;
+	BOOL result = false;
 
-    HDC hDC;
-    RECT rect;
-    int r, c;
-    int dx, dy;
-    double scalex, scaley;
-    int i, j;
+	HDC hDC;
+	RECT rect;
+	int r, c;
+	int dx, dy;
+	double scalex, scaley;
+	int i, j;
 
-    switch (message)
-    {
-        case WM_INITDIALOG:
+	switch (message)
+	{
+	case WM_INITDIALOG:
 
-	    global.newphase = global.phase;
-	    CheckRadioButton(hDlg, IDD_ARMIES, IDD_BATTLESHIPS, global.newphase);
+		global.newphase = global.phase;
+		CheckRadioButton(hDlg, IDD_ARMIES, IDD_BATTLESHIPS, global.newphase);
 
-	    hSensor = GetDlgItem(hDlg, IDD_SENSOR);
-	    hTile = GetDlgItem(hDlg, IDD_TILE);
+		hSensor = GetDlgItem(hDlg, IDD_SENSOR);
+		hTile = GetDlgItem(hDlg, IDD_TILE);
 
-	    SetFocus(GetDlgItem(hDlg, global.newphase));
-            return true ;
+		SetFocus(GetDlgItem(hDlg, global.newphase));
+			return true;
 
-        case WM_COMMAND:
-            switch (wParam)
-            {
-		case IDOK:
-		    global.phase = global.newphase;
-                    EndDialog (hDlg, true);
-		    return true;
+		case WM_COMMAND:
+			switch (wParam)
+			{
+				case IDOK:
+					global.phase = global.newphase;
+							EndDialog (hDlg, true);
+					return true;
 
-		case IDCANCEL:
-                    EndDialog (hDlg, false) ;
-		    return true ;
+				case IDCANCEL:
+							EndDialog (hDlg, false);
+					return true;
 
-		case IDD_ARMIES:
-		case IDD_FIGHTERS:
-		case IDD_DESTROYERS:
-		case IDD_TRANSPORTS:
-		case IDD_SUBMARINES:
-		case IDD_CRUISERS:
-		case IDD_CARRIERS:
-		case IDD_BATTLESHIPS:
-		    global.newphase = wParam;
-		    CheckRadioButton(hDlg, IDD_ARMIES, IDD_BATTLESHIPS, global.newphase);
-		    result = true;
-		    goto LpaintTile;
+				case IDD_ARMIES:
+				case IDD_FIGHTERS:
+				case IDD_DESTROYERS:
+				case IDD_TRANSPORTS:
+				case IDD_SUBMARINES:
+				case IDD_CRUISERS:
+				case IDD_CARRIERS:
+				case IDD_BATTLESHIPS:
+					global.newphase = wParam;
+					CheckRadioButton(hDlg, IDD_ARMIES, IDD_BATTLESHIPS, global.newphase);
+					result = true;
+					goto LpaintTile;
 
-		default:
-		    break;
-            }
-            break ;
+				default:
+					break;
+			}
+			break;
 
 	case WM_PAINT:
 
-	    // Sensor probe
-	    InvalidateRect(hSensor, null, true);
-	    UpdateWindow(hSensor);
+		// Sensor probe
+		InvalidateRect(hSensor, null, true);
+		UpdateWindow(hSensor);
 
-	    hDC = GetDC(hSensor);
-	    GetClientRect(hSensor, &rect);
+		hDC = GetDC(hSensor);
+		GetClientRect(hSensor, &rect);
 
-	    r = ROW(global.cursor) - 2;
-	    if (r < 0)
+		r = ROW(global.cursor) - 2;
+		if (r < 0)
 		r = 0;
-	    if (r + 5 > Mrowmx)
+		if (r + 5 > Mrowmx)
 		r = Mrowmx - 5;
-	    c = COL(global.cursor) - 2;
-	    if (c < 0)
+		c = COL(global.cursor) - 2;
+		if (c < 0)
 		c = 0;
-	    if (c + 5 > Mcolmx)
+		if (c + 5 > Mcolmx)
 		c = Mcolmx - 5;
 
-	    dx = (rect.right - rect.left) / 5;
-	    dy = (rect.bottom - rect.top) / 5;
-	    scalex = dx / cast(double)10;
-	    scaley = dy / cast(double)10;
+		dx = (rect.right - rect.left) / 5;
+		dy = (rect.bottom - rect.top) / 5;
+		scalex = dx / cast(double) 10;
+		scaley = dy / cast(double) 10;
 
-	    for (j = 0; j < 5; j++)
-	    {
-		for (i = 0; i < 5; i++)
+		for (j = 0; j < 5; j++)
 		{
-		    loc_t loc = (r + j) * (Mcolmx + 1) + (c + i);
-		    HANDLE h = global.mapvaltab[global.map[loc]];
+			for (i = 0; i < 5; i++)
+			{
+				loc_t loc = (r + j) * (Mcolmx + 1) + (c + i);
+				HANDLE h = global.mapvaltab[global.map[loc]];
 
-		    DrawBitmap(hDC, rect.left + i * dx, rect.top + j * dy,
-			h, scalex, scaley, SRCCOPY);
+				DrawBitmap(hDC, rect.left + i * dx, rect.top + j * dy,
+				h, scalex, scaley, SRCCOPY);
+			}
 		}
-	    }
 
-	    ReleaseDC(hSensor, hDC);
+		ReleaseDC(hSensor, hDC);
 
 	LpaintTile:
-	    // Sample Tile
+		// Sample Tile
 
-	    InvalidateRect(hTile, null, true);
-	    UpdateWindow(hTile);
+		InvalidateRect(hTile, null, true);
+		UpdateWindow(hTile);
 
-	    hDC = GetDC(hTile);
-	    GetClientRect(hTile, &rect);
+		hDC = GetDC(hTile);
+		GetClientRect(hTile, &rect);
 
-	    dx = rect.right - rect.left;
-	    dy = rect.bottom - rect.top;
-	    scalex = dx / cast(double)10;
-	    scaley = dy / cast(double)10;
+		dx = rect.right - rect.left;
+		dy = rect.bottom - rect.top;
+		scalex = dx / cast(double) 10;
+		scaley = dy / cast(double) 10;
 
-	    {
-		int ab = global.newphase - IDD_ARMIES;
-		HANDLE h = global.mapvaltab[ab + ((ab <= F) ? 5 : 6)];
+		{
+			int ab = global.newphase - IDD_ARMIES;
+			HANDLE h = global.mapvaltab[ab + ((ab <= F) ? 5 : 6)];
 
-		DrawBitmap(hDC, rect.left, rect.top,
-		    h, scalex, scaley, SRCCOPY);
-	    }
+			DrawBitmap(hDC, rect.left, rect.top,
+				h, scalex, scaley, SRCCOPY);
+		}
 
-	    ReleaseDC(hTile, hDC);
-	    break;
+		ReleaseDC(hTile, hDC);
+		break;
 
 	default:
-	    break;
-    }
-    return result;
+		break;
+	}
+	return result;
 }
 
 
@@ -1164,17 +1174,17 @@ extern (Windows) BOOL CitySelectDlgProc(HWND hDlg, uint message, uint wParam,
 
 int dialogCitySelect(int oldphase)
 {
-    //PRINTF("dialogCitySelect(oldphase = %d)\n", oldphase);
-    UpdateWindow(global.hwnd);
-    if (oldphase & ~7)
-	oldphase = 0;		// default to armies
-    global.phase = oldphase + IDD_ARMIES;
+	//PRINTF("dialogCitySelect(oldphase = %d)\n", oldphase);
+	UpdateWindow(global.hwnd);
+	if (oldphase & ~7)
+		oldphase = 0;		// default to armies
+	global.phase = oldphase + IDD_ARMIES;
 
 	DialogBoxParamA(global.hinst, "CitySelectBox", global.hwnd,
 	  &CitySelectDlgProc, 0);
 
-    //PRINTF("dialogCitySelect() = %d\n", global.phase - IDD_ARMIES);
-    return global.phase - IDD_ARMIES;
+	//PRINTF("dialogCitySelect() = %d\n", global.phase - IDD_ARMIES);
+	return global.phase - IDD_ARMIES;
 }
 
 
@@ -1183,55 +1193,55 @@ int dialogCitySelect(int oldphase)
  */
 
 extern (Windows) BOOL InitDlgProc (HWND hDlg, uint message, uint wParam,
-                                                               LONG lParam)
+					                                           LONG lParam)
 {
-    switch (message)
-    {
-        case WM_INITDIALOG:
+	switch (message)
+	{
+		case WM_INITDIALOG:
 
-	    global.newnumplayers = global.numplayers;
-	    CheckRadioButton(hDlg, IDD_ONE, IDD_SIX, global.newnumplayers);
-	    if (global.demo)
+		global.newnumplayers = global.numplayers;
+		CheckRadioButton(hDlg, IDD_ONE, IDD_SIX, global.newnumplayers);
+		if (global.demo)
 		CheckRadioButton(hDlg, IDD_DEMO, IDD_DEMO, IDD_DEMO);
-	    SetFocus(GetDlgItem(hDlg, global.newnumplayers));
-            return true ;
+		SetFocus(GetDlgItem(hDlg, global.newnumplayers));
+			return true;
 
-        case WM_COMMAND:
-            switch (wParam)
-            {
-		case IDOK:
-		    global.numplayers = global.newnumplayers;
-                    EndDialog (hDlg, true);
-		    return true;
+		case WM_COMMAND:
+			switch (wParam)
+			{
+				case IDOK:
+					global.numplayers = global.newnumplayers;
+							EndDialog (hDlg, true);
+					return true;
 
-		case IDCANCEL:
-                    EndDialog (hDlg, false) ;
-		    return true ;
+				case IDCANCEL:
+							EndDialog (hDlg, false);
+					return true;
 
-		case IDD_ONE:
-		case IDD_TWO:
-		case IDD_THREE:
-		case IDD_FOUR:
-		case IDD_FIVE:
-		case IDD_SIX:
-		    global.newnumplayers = wParam;
-		    CheckRadioButton(hDlg, IDD_ONE, IDD_SIX, global.newnumplayers);
-		    return true;
+				case IDD_ONE:
+				case IDD_TWO:
+				case IDD_THREE:
+				case IDD_FOUR:
+				case IDD_FIVE:
+				case IDD_SIX:
+					global.newnumplayers = wParam;
+					CheckRadioButton(hDlg, IDD_ONE, IDD_SIX, global.newnumplayers);
+					return true;
 
-		case IDD_DEMO:
-		    global.demo ^= 1;
-		    CheckRadioButton(hDlg, IDD_DEMO, IDD_DEMO, global.demo ? IDD_DEMO : IDD_DEMO + 1);
-		    return true;
+				case IDD_DEMO:
+					global.demo ^= 1;
+					CheckRadioButton(hDlg, IDD_DEMO, IDD_DEMO, global.demo ? IDD_DEMO : IDD_DEMO + 1);
+					return true;
 
-		default:
-		    break;
-            }
-            break ;
+				default:
+					break;
+			}
+			break;
 
 	default:
-	    break;
-    }
-    return false ;
+		break;
+	}
+	return false;
 }
 
 
@@ -1243,8 +1253,8 @@ extern (Windows) BOOL InitDlgProc (HWND hDlg, uint message, uint wParam,
 
 extern (C) void win_flush()
 {
-    InvalidateRect(global.hwnd, &global.text, false);
-    UpdateWindow(global.hwnd);
+	InvalidateRect(global.hwnd, &global.text, false);
+	UpdateWindow(global.hwnd);
 }
 
 /******************************
@@ -1253,95 +1263,96 @@ extern (C) void win_flush()
 
 extern (C) void sound_click()
 {
-    UpdateWindow(global.hwnd);
-    if (global.speaker)
-	PlaySoundA("click.wav", null, SND_ASYNC | SND_FILENAME | SND_NOSTOP);
+	UpdateWindow(global.hwnd);
+	if (global.speaker)
+		PlaySoundA("click.wav", null, SND_ASYNC | SND_FILENAME | SND_NOSTOP);
 }
 
 void sound_gun()
 {
-    UpdateWindow(global.hwnd);
-    if (global.speaker)
-	PlaySoundA("gun_1.wav", null, SND_SYNC | SND_FILENAME);
+	UpdateWindow(global.hwnd);
+	if (global.speaker)
+		PlaySoundA("gun_1.wav", null, SND_SYNC | SND_FILENAME);
 }
 
 void sound_bang()
 {
-    UpdateWindow(global.hwnd);
-    if (global.speaker)
-    {	PlaySoundA("explosi1.wav", null, SND_SYNC | SND_FILENAME);
-	PlaySoundA("bubbles.wav", null, SND_SYNC | SND_FILENAME);
-    }
+	UpdateWindow(global.hwnd);
+	if (global.speaker)
+	{
+		PlaySoundA("explosi1.wav", null, SND_SYNC | SND_FILENAME);
+		PlaySoundA("bubbles.wav", null, SND_SYNC | SND_FILENAME);
+	}
 }
 
 void sound_error()
 {
-    UpdateWindow(global.hwnd);
-    if (global.speaker)
-	PlaySoundA("error.wav", null, SND_SYNC | SND_FILENAME);
+	UpdateWindow(global.hwnd);
+	if (global.speaker)
+		PlaySoundA("error.wav", null, SND_SYNC | SND_FILENAME);
 }
 
 void sound_splash()
 {
-    UpdateWindow(global.hwnd);
-    if (global.speaker)
-	PlaySoundA("splash.wav", null, SND_SYNC | SND_FILENAME);
+	UpdateWindow(global.hwnd);
+	if (global.speaker)
+		PlaySoundA("splash.wav", null, SND_SYNC | SND_FILENAME);
 }
 
 void sound_aground()
 {
-    UpdateWindow(global.hwnd);
-    if (global.speaker)
-	PlaySoundA("bubbles.wav", null, SND_SYNC | SND_FILENAME);
+	UpdateWindow(global.hwnd);
+	if (global.speaker)
+		PlaySoundA("bubbles.wav", null, SND_SYNC | SND_FILENAME);
 }
 
 void sound_subjugate()
 {
-    UpdateWindow(global.hwnd);
-    if (global.speaker)
-	PlaySoundA("machine1.wav", null, SND_SYNC | SND_FILENAME);
+	UpdateWindow(global.hwnd);
+	if (global.speaker)
+		PlaySoundA("machine1.wav", null, SND_SYNC | SND_FILENAME);
 }
 
 void sound_crushed()
 {
-    UpdateWindow(global.hwnd);
-    if (global.speaker)
-	PlaySoundA("gun_3.wav", null, SND_SYNC | SND_FILENAME);
+	UpdateWindow(global.hwnd);
+	if (global.speaker)
+		PlaySoundA("gun_3.wav", null, SND_SYNC | SND_FILENAME);
 }
 
 void sound_flyby()
 {
-    UpdateWindow(global.hwnd);
-    if (global.speaker)
-	PlaySoundA("flyby.wav", null, SND_SYNC | SND_FILENAME);
+	UpdateWindow(global.hwnd);
+	if (global.speaker)
+		PlaySoundA("flyby.wav", null, SND_SYNC | SND_FILENAME);
 }
 
 void sound_fcrash()
 {
-    UpdateWindow(global.hwnd);
-    if (global.speaker)
-	PlaySoundA("explode.wav", null, SND_SYNC | SND_FILENAME);
+	UpdateWindow(global.hwnd);
+	if (global.speaker)
+		PlaySoundA("explode.wav", null, SND_SYNC | SND_FILENAME);
 }
 
 void sound_fuel()
 {
-    UpdateWindow(global.hwnd);
-    if (global.speaker)
-	PlaySoundA("fuel.wav", null, SND_SYNC | SND_FILENAME);
+	UpdateWindow(global.hwnd);
+	if (global.speaker)
+		PlaySoundA("fuel.wav", null, SND_SYNC | SND_FILENAME);
 }
 
 void sound_taps()
 {
-    UpdateWindow(global.hwnd);
-    if (global.speaker)
-	PlaySoundA("taps.wav", null, SND_SYNC | SND_FILENAME);
+	UpdateWindow(global.hwnd);
+	if (global.speaker)
+		PlaySoundA("taps.wav", null, SND_SYNC | SND_FILENAME);
 }
 
 void sound_ackack()
 {
-    UpdateWindow(global.hwnd);
-    if (global.speaker)
-	PlaySoundA("ackack1.wav", null, SND_SYNC | SND_FILENAME);
+	UpdateWindow(global.hwnd);
+	if (global.speaker)
+		PlaySoundA("ackack1.wav", null, SND_SYNC | SND_FILENAME);
 }
 
 /***********************************
@@ -1351,56 +1362,54 @@ void sound_ackack()
 
 void winSetup()
 {
-    //PRINTF("winSetup()\n");
-    debug
-    {
-	// set random number generator to predictable value
-	setran();
-    }
+	//PRINTF("winSetup()\n");
+	debug
+	{
+		// set random number generator to predictable value
+		setran();
+	}
 
-    Text *t = &player[0].display.text;
+	//Text* t = &player[0].display.text;
 
-    //printf("Please wait seven days for creation of world...\n");
-    selmap();			// read in map
-    citini();			// init city variables
+	//printf("Please wait seven days for creation of world...\n");
+	selmap();			// read in map
+	citini();			// init city variables
 
-    numply = global.numplayers - IDD_ONE + 1;
-    numleft = numply;
-    for (plynum = 0; plynum <= numply; plynum++)
-    {
-//PRINTF("player %d\n", plynum);
-	Player *p = &player[plynum];
-	p.display = new Display();
-	Display *d = p.display;
-	d.initialize();
+	numply = global.numplayers - IDD_ONE + 1;
+	numleft = numply;
+	for (plynum = 0; plynum <= numply; plynum++)
+	{
+		//PRINTF("player %d\n", plynum);
+		Player* p = &player[plynum];
+		NewDisplay d = p.display = new NewDisplay();
+
+		//d.initialize();
 
 		p.num = plynum;
 		p.map = (plynum == 0) ? .map : new ubyte[MAPSIZE];
 		p.human = (plynum == 1 && !global.demo);
 		p.watch = DAnone;
 
-	if (p.human)
-	{
-	    d.timeinterval = 1;
-	}
-	else
-	{
-	}
+		if (p.human)
+		{
+			d.timeinterval = 1;
+		}
 
-	if (plynum == 1)
-	{
-	    p.secflg = 1;
-	    p.watch = DAwindows;
-	    d.text.TTinit();
-	    d.text.watch = p.watch;
-	    d.maptab = MTcgacolor;
-	    d.setdispsize(d.text.nrows, d.text.ncols);
-	    d.text.clear();
-	    d.text.block_cursor();
+		if (plynum == 1)
+		{
+			p.secflg = 1;
+			p.watch = DAwindows;
+			//d.text.TTinit();
+			//d.text.watch = p.watch;
+			d.panel.isActive = true;
+			/+d.maptab = MTcgacolor;
+			d.setdispsize(d.text.nrows, d.text.ncols);
+			d.text.clear();
+			d.text.block_cursor();+/
+		}
+		if (plynum)
+			p.citsel();		// select city for each player
 	}
-	if (plynum)
-	    p.citsel();		// select city for each player
-    }
 
 	plynum = 1;			// get the default player
 	global.player = &player[1];
@@ -1408,43 +1417,41 @@ void winSetup()
 
 void winRestore()
 {
-    //PRINTF("winRestore()\n");
-    debug
-    {
-	setran();		// seed random number generator
-    }
-
-    Text *t = &player[0].display.text;
-
-    t.TTinit();
-
-    for (plynum = 0; plynum <= numply; plynum++)
-    {   Player *p = &player[plynum];
-	Display *d = new Display();
-	p.display = d;
-	d.initialize();
-
-	if (p.human)
+	//PRINTF("winRestore()\n");
+	debug
 	{
-	    d.timeinterval = 1;
-	}
-	else
-	{
+		setran();		// seed random number generator
 	}
 
-	if (plynum == 1)
+	/+Text* t = &player[0].display.text;
+
+	t.TTinit();+/
+
+	for (plynum = 0; plynum <= numply; plynum++)
 	{
-	    p.secflg = 1;
-	    p.watch = DAwindows;
-	    d.text.TTinit();
-	    d.text.watch = p.watch;
-	    d.maptab = MTcgacolor;
-	    d.setdispsize(d.text.nrows, d.text.ncols);
-	    d.text.clear();
-	    d.text.block_cursor();
+		Player* p = &player[plynum];
+		NewDisplay d = p.display = new NewDisplay();
+		//d.initialize();
+
+		if (p.human)
+		{
+			d.timeinterval = 1;
+		}
+
+		if (plynum == 1)
+		{
+			p.secflg = 1;
+			p.watch = DAwindows;
+			/+d.text.TTinit();
+			d.text.watch = p.watch;+/
+			d.panel.isActive = true;
+			/+d.maptab = MTcgacolor;
+			d.setdispsize(d.text.nrows, d.text.ncols);
+			d.text.clear();
+			d.text.block_cursor();+/
+		}
 	}
-    }
-    plynum = 1;			// get the default player
+	plynum = 1;			// get the default player
 }
 
 /***************************************
@@ -1455,22 +1462,23 @@ void winRestore()
 
 bool adjSector(double newscalex, double newscaley)
 {
-    int cursorx;
-    int dx;
-    int ncols;
-    int scmin;
-    int scmax;
+	int cursorx;
+	int dx;
+	int ncols;
+	int scmin;
+	int scmax;
 
-    int cursory;
-    int dy;
-    int nrows;
-    int srmin;
-    int srmax;
+	int cursory;
+	int dy;
+	int nrows;
+	int srmin;
+	int srmax;
 
-    int gap;
-    int n;
-    int width;
-    Display *d;
+	int gap;
+	int n;
+	int width;
+	//Display* d;
+	NewDisplay d;
 
 	bool moved = false;
 	int newval;
@@ -1478,89 +1486,95 @@ bool adjSector(double newscalex, double newscaley)
 	if (global.cursor <= LOC_LASTMAGIC) return false;
 
 //PRINTF("Before: ulcorner = %d\n", global.ulcorner);
-    ncols = COL(global.cursor) - COL(global.ulcorner);
+	ncols = COL(global.cursor) - COL(global.ulcorner);
 //PRINTF("cursor = %d, diff = %d, ncols = %d\n", global.cursor, global.cursor - global.ulcorner, ncols);
-    dx = cast(int)(10 * global.scalex);
-    cursorx = ncols * dx + (dx / 2) - global.offsetx;
-    dx = cast(int)(10 * newscalex);
-    n = (cursorx - (dx / 2) + (dx - 1)) / dx;
+	dx = cast(int)(10 * global.scalex);
+	cursorx = ncols * dx + (dx / 2) - global.offsetx;
+	dx = cast(int)(10 * newscalex);
+	n = (cursorx - (dx / 2) + (dx - 1)) / dx;
 //PRINTF("n = %d, cursorx = %d, dx = %d\n", n, cursorx, dx);
-    if (cursorx < dx + (dx / 2))
-    {   n = 1;
-	cursorx = n * dx + (dx / 2);
-    }
-    if (COL(global.cursor) < n)
-    {   n = COL(global.cursor);
-	cursorx = n * dx + (dx / 2);
-    }
-    width = (global.pixelx + (dx - 1)) / dx;
+	if (cursorx < dx + (dx / 2))
+	{
+		n = 1;
+		cursorx = n * dx + (dx / 2);
+	}
+	if (COL(global.cursor) < n)
+	{
+		n = COL(global.cursor);
+		cursorx = n * dx + (dx / 2);
+	}
+	width = (global.pixelx + (dx - 1)) / dx;
 //PRINTF("n = %d, width = %d\n", n, width);
 
-    // Right justify right edge
-    gap = cursorx - dx/2 + 3 * dx - global.pixelx;
-    if (gap > 0)
-    {
-	cursorx -= gap;
-	n = (cursorx - (dx / 2) + (dx - 1)) / dx;
-//PRINTF("1adj gap = %d\n", gap);
-    }
-    gap = global.pixelx - (((Mcolmx + 1) - COL(global.cursor)) * dx + cursorx - dx/2);
-    if (gap > 0)
-    {
-	cursorx += gap;
-	n = (cursorx - (dx / 2) + (dx - 1)) / dx;
-//PRINTF("2adj gap = %d\n", gap);
-	if (COL(global.cursor) < n)
-	{   n = COL(global.cursor);
-	    cursorx = n * dx + (dx / 2);
+	// Right justify right edge
+	gap = cursorx - dx/2 + 3 * dx - global.pixelx;
+	if (gap > 0)
+	{
+		cursorx -= gap;
+		n = (cursorx - (dx / 2) + (dx - 1)) / dx;
+		//PRINTF("1adj gap = %d\n", gap);
 	}
-    }
+	gap = global.pixelx - (((Mcolmx + 1) - COL(global.cursor)) * dx + cursorx - dx/2);
+	if (gap > 0)
+	{
+		cursorx += gap;
+		n = (cursorx - (dx / 2) + (dx - 1)) / dx;
+		//PRINTF("2adj gap = %d\n", gap);
+		if (COL(global.cursor) < n)
+		{
+			n = COL(global.cursor);
+			cursorx = n * dx + (dx / 2);
+		}
+	}
 
 	newval = dx * n + dx / 2 - cursorx;
 	if (newval != global.offsetx)
 		moved = true;
 	global.offsetx = newval;
 //PRINTF("offsetx = %d\n", global.offsetx);
-    scmin = COL(global.cursor) - n;
-    scmax = (width - 1);
+	scmin = COL(global.cursor) - n;
+	scmax = (width - 1);
 //PRINTF("n = %d, width = %d, scmin = %d, COL(cursor) = %d\n", n, width, scmin, COL(global.cursor));
-    assert(scmin <= COL(global.cursor));
+	assert(scmin <= COL(global.cursor));
 
-    nrows = ROW(global.cursor) - ROW(global.ulcorner);
+	nrows = ROW(global.cursor) - ROW(global.ulcorner);
 //PRINTF("cursor = %d, diff = %d, nrows = %d\n", global.cursor, global.cursor - global.ulcorner, nrows);
-    dy = cast(int)(10 * global.scaley);
-    cursory = nrows * dy + (dy / 2) - global.offsety;
-    dy = cast(int)(10 * newscaley);
-    n = (cursory - (dy / 2) + (dy - 1)) / dy;
+	dy = cast(int)(10 * global.scaley);
+	cursory = nrows * dy + (dy / 2) - global.offsety;
+	dy = cast(int)(10 * newscaley);
+	n = (cursory - (dy / 2) + (dy - 1)) / dy;
 //PRINTF("n = %d, cursory = %d, dy = %d\n", n, cursory, dy);
-    if (cursory < dy + (dy / 2))
-    {   n = 1;
-	cursory = n * dy + (dy / 2);
-    }
-    if (ROW(global.cursor) < n)
-    {   n = ROW(global.cursor);
-	cursory = n * dy + dy / 2;
-//PRINTF("adjust top\n");
-    }
-    width = (global.pixely + (dy - 1)) / dy;
-
-    // Bottom justify bottom edge
-    gap = cursory - dy/2 + 3 * dy - global.pixely;
-    if (gap > 0)
-    {
-	cursory -= gap;
-	n = (cursory - (dy / 2) + (dy - 1)) / dy;
-    }
-    gap = global.pixely - (((Mrowmx + 1) - ROW(global.cursor)) * dy + cursory - dy/2);
-    if (gap > 0)
-    {
-	cursory += gap;
-	n = (cursory - (dy / 2) + (dy - 1)) / dy;
-	if (ROW(global.cursor) < n)
-	{   n = ROW(global.cursor);
-	    cursory = n * dy + dy / 2;
+	if (cursory < dy + (dy / 2))
+	{
+		n = 1;
+		cursory = n * dy + (dy / 2);
 	}
-    }
+	if (ROW(global.cursor) < n)
+	{
+		n = ROW(global.cursor);
+		cursory = n * dy + dy / 2;
+		//PRINTF("adjust top\n");
+	}
+	width = (global.pixely + (dy - 1)) / dy;
+
+	// Bottom justify bottom edge
+	gap = cursory - dy/2 + 3 * dy - global.pixely;
+	if (gap > 0)
+	{
+		cursory -= gap;
+		n = (cursory - (dy / 2) + (dy - 1)) / dy;
+	}
+	gap = global.pixely - (((Mrowmx + 1) - ROW(global.cursor)) * dy + cursory - dy/2);
+	if (gap > 0)
+	{
+		cursory += gap;
+		n = (cursory - (dy / 2) + (dy - 1)) / dy;
+		if (ROW(global.cursor) < n)
+		{
+			n = ROW(global.cursor);
+			cursory = n * dy + dy / 2;
+		}
+	}
 
 	newval = dy * n + dy / 2 - cursory;
 	if (newval != global.offsety)
@@ -1570,9 +1584,9 @@ bool adjSector(double newscalex, double newscaley)
 	srmax = (width - 1);
 //PRINTF("n = %d, height = %d, srmin = %d\n", n, width, srmin);
 
-    d = global.player.display;
-    //d.Smin = srmin * 256 + scmin;
-    d.Smax = srmax * 256 + scmax;
+	d = global.player.display;
+	//d.Smin = srmin * 256 + scmin;
+	d.Smax = srmax * 256 + scmax;
 
 	newval = srmin * (Mcolmx + 1) + scmin;
 	if (newval != global.ulcorner)
@@ -1582,17 +1596,17 @@ bool adjSector(double newscalex, double newscaley)
 //PRINTF("offsetx = %d, offsety = %d\n", global.offsetx, global.offsety);
 //PRINTF("After: ulcorner = %d, Smin = %x, Smax = %x\n", global.ulcorner, d.Smin, d.Smax);
 
-    assert(global.ulcorner >= 0 && global.ulcorner < MAPSIZE);
-    assert(global.ulcorner <= global.cursor && global.cursor < MAPSIZE);
-    assert(COL(global.ulcorner) <= COL(global.cursor));
-    assert(dx > 0 && dy > 0);
-    assert(global.offsetx >= 0 && global.offsetx < dx);
-    assert(global.offsety >= 0 && global.offsety < dy);
+	assert(global.ulcorner >= 0 && global.ulcorner < MAPSIZE);
+	assert(global.ulcorner <= global.cursor && global.cursor < MAPSIZE);
+	assert(COL(global.ulcorner) <= COL(global.cursor));
+	assert(dx > 0 && dy > 0);
+	assert(global.offsetx >= 0 && global.offsetx < dx);
+	assert(global.offsety >= 0 && global.offsety < dy);
 
-    global.scalex = newscalex;
-    global.scaley = newscaley;
+	global.scalex = newscalex;
+	global.scaley = newscaley;
 
-    return moved;
+	return moved;
 }
 
 /*************************************
@@ -1615,17 +1629,17 @@ body {
 
 	if (loc <= LOC_LASTMAGIC) return;  // no current cursor
 
-    r = ROW(loc) - ROW(global.ulcorner);
-    c = COL(loc) - COL(global.ulcorner);
-    dx = cast(int)(10 * global.scalex);
-    dy = cast(int)(10 * global.scaley);
+	r = ROW(loc) - ROW(global.ulcorner);
+	c = COL(loc) - COL(global.ulcorner);
+	dx = cast(int)(10 * global.scalex);
+	dy = cast(int)(10 * global.scaley);
 
-    rect.left = c * dx - global.offsetx;
-    rect.top = 40 + r * dy - global.offsety;
-    rect.right = rect.left + dx;
-    rect.bottom = rect.top + dy;
+	rect.left = c * dx - global.offsetx;
+	rect.top = 40 + r * dy - global.offsety;
+	rect.right = rect.left + dx;
+	rect.bottom = rect.top + dy;
 
-    InvalidateRect(global.hwnd, &rect, false);
+	InvalidateRect(global.hwnd, &rect, false);
 }
 
 /*************************************
@@ -1636,44 +1650,44 @@ body {
 
 void invalidateLocRect(loc_t loc1, loc_t loc2)
 {
-    RECT rect;
-    int r1, c1;
-    int r2, c2;
-    int dx;
-    int dy;
-    DWORD mode;
+	RECT rect;
+	int r1, c1;
+	int r2, c2;
+	int dx;
+	int dy;
+	DWORD mode;
 
 //PRINTF("invalidateLoc(loc = %d)\n", loc);
-    assert(loc1 < MAPSIZE);
-    assert(loc2 < MAPSIZE);
+	assert(loc1 < MAPSIZE);
+	assert(loc2 < MAPSIZE);
 
-    r1 = ROW(loc1) - ROW(global.ulcorner);
-    c1 = COL(loc1) - COL(global.ulcorner);
-    r2 = ROW(loc2) - ROW(global.ulcorner);
-    c2 = COL(loc2) - COL(global.ulcorner);
+	r1 = ROW(loc1) - ROW(global.ulcorner);
+	c1 = COL(loc1) - COL(global.ulcorner);
+	r2 = ROW(loc2) - ROW(global.ulcorner);
+	c2 = COL(loc2) - COL(global.ulcorner);
 
-    if (r1 > r2)
-    {	int r;
+	if (r1 > r2)
+	{	int r;
 	r = r1;
 	r1 = r2;
 	r2 = r;
-    }
-    if (c1 > c2)
-    {	int c;
+	}
+	if (c1 > c2)
+	{	int c;
 	c = c1;
 	c1 = c2;
 	c2 = c;
-    }
+	}
 
-    dx = cast(int)(10 * global.scalex);
-    dy = cast(int)(10 * global.scaley);
+	dx = cast(int)(10 * global.scalex);
+	dy = cast(int)(10 * global.scaley);
 
-    rect.left = c1 * dx - global.offsetx;
-    rect.top = 40 + r1 * dy - global.offsety;
-    rect.right = rect.left + dx * (c2 - c1 + 1);
-    rect.bottom = rect.top + dy * (r2 - r1 + 1);
+	rect.left = c1 * dx - global.offsetx;
+	rect.top = 40 + r1 * dy - global.offsety;
+	rect.right = rect.left + dx * (c2 - c1 + 1);
+	rect.bottom = rect.top + dy * (r2 - r1 + 1);
 
-    InvalidateRect(global.hwnd, &rect, false);
+	InvalidateRect(global.hwnd, &rect, false);
 }
 
 /******************************************
@@ -1682,7 +1696,7 @@ void invalidateLocRect(loc_t loc1, loc_t loc2)
 
 void invalidateSector()
 {
-    InvalidateRect(global.hwnd, &global.sector, false);
+	InvalidateRect(global.hwnd, &global.sector, false);
 }
 
 /******************************************
@@ -1691,26 +1705,26 @@ void invalidateSector()
 
 int LocToX(loc_t loc)
 {
-    int dx;
-    int x;
-    int col;
+	int dx;
+	int x;
+	int col;
 
-    col = COL(loc) - COL(global.ulcorner);
-    dx = cast(int)(10 * global.scalex);
-    x = col * dx + dx / 2 - global.offsetx;
-    return x;
+	col = COL(loc) - COL(global.ulcorner);
+	dx = cast(int)(10 * global.scalex);
+	x = col * dx + dx / 2 - global.offsetx;
+	return x;
 }
 
 int LocToY(loc_t loc)
 {
-    int dy;
-    int y;
-    int row;
+	int dy;
+	int y;
+	int row;
 
-    row = ROW(loc) - ROW(global.ulcorner);
-    dy = cast(int)(10 * global.scaley);
-    y = 40 + row * dy + dy / 2 - global.offsety;
-    return y;
+	row = ROW(loc) - ROW(global.ulcorner);
+	dy = cast(int)(10 * global.scaley);
+	y = 40 + row * dy + dy / 2 - global.offsety;
+	return y;
 }
 
 /*********************************************
@@ -1719,20 +1733,36 @@ int LocToY(loc_t loc)
 
 void ShowBlast(int state, loc_t loc)
 {
-    RECT blastbox;
-    int x, y;
+	RECT blastbox;
+	int x, y;
 
-    x = LocToX(loc);
-    y = LocToY(loc);
-    blastbox.bottom = y + 5;
-    blastbox.top = blastbox.bottom - 20;
-    blastbox.left = x - 10;
-    blastbox.right = x + 10;
-    InvalidateRect(global.hwnd, &blastbox, false);
-    global.blastState = state;
-    global.blastx = blastbox.left;
-    global.blasty = blastbox.top;
-    if (state)
-	UpdateWindow(global.hwnd);
+	x = LocToX(loc);
+	y = LocToY(loc);
+	blastbox.bottom = y + 5;
+	blastbox.top = blastbox.bottom - 20;
+	blastbox.left = x - 10;
+	blastbox.right = x + 10;
+	InvalidateRect(global.hwnd, &blastbox, false);
+	global.blastState = state;
+	global.blastx = blastbox.left;
+	global.blasty = blastbox.top;
+	if (state)
+		UpdateWindow(global.hwnd);
 }
 
+/**
+ * Retrieve a buffered keystroke and clear it
+ */
+char getKeystroke() {
+	char key = std.ctype.toupper(global.bufferedKey);
+	global.bufferedKey = char.init;
+	return key;
+}
+
+
+/**
+ * Retrieve a buffered keystroke without clearing it
+ */
+char peekKeystroke() {
+	return std.ctype.toupper(global.bufferedKey);
+}

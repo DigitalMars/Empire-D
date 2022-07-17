@@ -18,12 +18,19 @@
 module eplayer;
 
 import empire;
-import display;
 import path;
 import move;
+import maps;
+import var;
+import sub2;
+import std.string;
+version (Windows) {
+	import winmain, newdisplay;
+	debug (tslice) import std.c.windows.windows;
+} else {
+	import display;
+}
 
-
-debug (tslice) import std.c.windows.windows;
 debug (tslice) bool debugSlices = true;
 // For each player
 
@@ -36,11 +43,15 @@ struct Player
     ubyte watch;	// display attribute DAxxxx if non-zero
     int movedone;	// !=0 if we moved the piece this turn
 
-    int uninum;		// what unit number we're on
-    int secflg;		// if next unit has to be in current sector
-    ubyte defeat;	// true if player is defeated
-    Display *display;
-    int turns;		// number of turns completed
+	int uninum;       // what unit number we're on
+	int secflg;       // if next unit has to be in current sector
+	ubyte defeat;     // true if player is defeated
+	version (Windows) {
+		NewDisplay display;
+	} else {
+		Display* display;
+	}
+	int turns;        // number of turns completed
 
     static Player *get(int num) { return &player[num]; }
 
@@ -194,7 +205,7 @@ struct Player
 	if (p.watch)			// only by sector if we're watching
 	    p.secflg = true;		// back to moving by sector
 
-	
+
 	for (i = unitop; i--;)
 	{   u = &unit[i];
 	    if (u.own == p.num)
@@ -207,18 +218,18 @@ struct Player
      * Finish up the round for this player.
      */
 
-    void finrnd()
-    {
-	if (!human)			// if computer player
-	    cityph();			// adjust city phases as req'd
-	display.remove_sticky();	// remove any 'sticky' messages
-	hrdprd(this);			// hardware production
-	chkwin();			// see if anybody won
-	round++;			// next round
-	for (int i = 1; i <= numply; i++)
-	    Player.get(i).notify_round(this,round);	// type out the round #
-	display.text.flush();
-    }
+	void finrnd()
+	{
+		if (!human)                          // if computer player
+			cityph();                        // adjust city phases as req'd
+		display.remove_sticky();             // remove any 'sticky' messages
+		hrdprd(this);                        // hardware production
+		chkwin();                            // see if anybody won
+		round++;                             // next round
+		for (int i = 1; i <= numply; i++)
+			Player.get(i).notify_round(this, round);  // type out the round #
+		//display.text.flush();
+	}
 
 
     static int locold;		// previous loc of unit
@@ -276,15 +287,19 @@ struct Player
      *	true		if we get another move
      */
 
-    int evalu8(Unit *u,dir_t r2)
-    {
-	loc_t loc = u.loc;		// location of unit
-	int type = u.typ;		// what type of unit we have
-	int ab = .map[loc];		// what's there
-	int ac;
-	Player *p = this;
-	Display *d = p.display;
-	Text *t = &d.text;
+	bool evalu8(Unit* u, dir_t r2)
+	{
+		loc_t loc = u.loc;				         // location of unit
+		int type = u.typ;				         // what type of unit we have
+		int ab = .map[loc];				         // what's there
+		int ac;
+		//Player* p = this;
+		version (Windows) {
+			NewDisplay d = display;
+		} else {
+			Display* d = display;
+			Text* t = &d.text;
+		}
 
 		// perform the move
 
@@ -419,7 +434,7 @@ struct Player
 
       eomove(loc);				// do ending sensor probes
 
-      switch (type)
+		final switch (type)
       {
 	    case F:
 		if (u.hit % 4 == 0)
@@ -437,10 +452,7 @@ struct Player
 				  u.hit <= typx[type].hittab/2)  // or half damaged
 				return false;
 			break;
-		// todo remove
-	    default:
-		assert(0);
-      }
+		}
 
 		if (.typ[ac] == X)                       // if in city
 		return false;                            // then no extra moves
@@ -509,14 +521,20 @@ struct Player
      * Type out sector indicated by upper left corner loc.
      */
 
-    void sector(loc_t loc)
-    {
-	Player *p = this;
-	Display *d = p.display;
-	Text *t = &p.display.text;
+	void sector(loc_t loc)
+	{
+		//Player* p = this;
+		version (Windows) {
+			NewDisplay d = display;
 
-	if (!t.watch)
-	    return;			// not watching this player
+			if (!d.panel.isActive) return;
+
+		} else {
+			Display* d = display;
+			Text* t = &display.text;
+
+			if (!t.watch) return;  // not watching this player
+		}
 
 	//if (loc >= MAPSIZE) PRINTF("sector(loc = %d)\n", loc);
 	assert(loc < MAPSIZE);
@@ -593,10 +611,16 @@ struct Player
      * Center the sector about loc.
      */
 
-    void center(loc_t loc)
-    {   int row,col,rowsize,colsize,size;
-        Player *p = this;
-        Display *d = p.display;
+	void center(loc_t loc)
+	{
+		int row, col, rowsize, colsize, size;
+		//Player* p = this;
+
+		version (Windows) {
+			NewDisplay d = display;
+		} else {
+			Display* d = display;
+		}
 
 		row = ROW(loc);
 		col = COL(loc);
@@ -658,12 +682,17 @@ struct Player
      *	!=0	move successfully completed
      */
 
-    int hmove(Unit *u,dir_t *pr2)
-    {   loc_t oldloc;
-      int cmd;
-      Player *p = this;
-      Display *d = p.display;
-      Text *t = &d.text;
+	int hmove(Unit* u, dir_t* pr2)
+	{
+		loc_t oldloc;
+		int cmd;
+		//Player* p = this;
+		version (Windows) {
+			NewDisplay d = display;
+		} else {
+			Display* d = display;
+			Text* t = &d.text;
+		}
 
 		assert(u.loc);
 		assert(u.own == num);
@@ -1218,37 +1247,54 @@ struct Player
      * Print current mode if necessary.
      */
 
-    void setmode(int newmod)
-    {   static char *modmsg[] =
-	[	"         \1",
-	    "Move     \1",
-	    "Survey   \1",
-	    "Direction\1",
-	    "From To  \1",
-	    "City Prod\1"
-	];
-
-	if (mode != newmod)			// if it is a new mode
+	void setmode(int newmod)
 	{
-	    display.text.cmes(display.text.DS(2), modmsg[newmod]);
-	    display.text.flush();
-	    if (newmod == mdSURV || newmod == mdDIR ||
-		mode == mdSURV || mode == mdTO || mode == mdDIR)
-		invalidateSector();
-	    mode = newmod;			// set new mode
+		if (mode != newmod)						// if it is a new mode
+		{
+			version (Windows) {
+				static char[][] modmsg =
+				[
+					null,
+					"Move",
+					"Survey",
+					"Direction",
+					"From To",
+					"City Prod"
+				];
+
+				display.panel[2] = modmsg[newmod];
+				display.panel[3] = null;
+			} else {
+				static char*[] modmsg =
+				[
+					"		 \1",
+					"Move	 \1",
+					"Survey   \1",
+					"Direction\1",
+					"From To  \1",
+					"City Prod\1"
+				];
+
+				display.text.cmes(display.text.DS(2), modmsg[newmod]);
+				display.text.flush();
+			}
+			if (newmod == mdSURV || newmod == mdDIR ||
+				mode == mdSURV || mode == mdTO || mode == mdDIR)
+				invalidateSector();
+			mode = newmod;						// set new mode
+		}
 	}
-    }
 
 
     /*****************************
      * There was a command error.
      */
 
-    void cmderror()
-    {
-	display.text.bell();
-	display.valcmd(mode);
-    }
+	void cmderror()
+	{
+		//display.text.bell();
+		display.valcmd(mode);
+	}
 
 
     /*******************************
@@ -1405,7 +1451,7 @@ struct Player
 			  citltr(loc, pr2))                 // unowned city in ltr
 			return false;                       // caller must pick move
 
-		switch (ifo)
+		final switch (ifo)
 		{
 		case fnAW:
 			return false;                       // caller picks move
@@ -1454,13 +1500,9 @@ struct Player
 			}
 			*pr2 = -1;                          // stay put
 			return true;
-
-			// todo remove
-	    default:
-		assert(0);			// bad ifo
-		return false;
+		}
 	}
-    }
+
 
     /**********************************
      * Given a unit number and a trial move, see if it's ok.
@@ -1528,46 +1570,57 @@ struct Player
      *	city[citnum].phs
      */
 
-    void phasin(City *c)
-    {   loc_t loc;
-	int ab,i;
-	Player *p = this;
-	Display *d = p.display;
-	Text *t = &d.text;
+	void phasin(City* c)
+	{
+		loc_t loc;
+		int ab, i;
+		//Player* p = this;
+		version (Windows) {
+			//NewDisplay d = display;
+		} else {
+			Display* d = display;
+			Text* t = &d.text;
+		}
 
-	loc = c.loc;				// city location
-	if (!d.insect(loc,2))		// if not in current sector
-	    center(loc);			// center sector about city
-	typcit(p,c);				// type out data on city
-	version (Windows)
-	{
-	    d.pcur(loc);				// position cursor
-	    t.flush();
-	    i = dialogCitySelect(c.phs);
-	    ab = typx[i].unichr;
+		loc = c.loc;                  // city location
+		if (!display.insect(loc,2))   // if not in current sector
+			center(loc);              // center sector about city
+
+		version (Windows)
+		{
+			NewDisplay.typcit(this, c);  // type out data on city
+			display.pcur(loc);           // position cursor
+			//t.flush();
+			i = dialogCitySelect(c.phs);
+			ab = typx[i].unichr;
+			c.phs = i;                // set city phase
+			c.fnd = round + typx[i].phstart;
+			NewDisplay.typcit(this, c);
+		}
+		else
+		{
+			typcit(this, c);             // added by Stevart: type out data on city
+			d.cityProdDemands();
+			d.pcur(loc);              // position cursor
+			while (true)
+			{
+				int c = t.TTin();
+				ab = toupper(c);      // get char from tty
+				for (i = 7; i >= 0; i--)
+					if (ab == typx[i].unichr)
+						break;
+				if (i >= 0)
+					break;            // got a good one
+				t.bell();
+			}
+			t.curs(t.DS(0) + 25);     // where we want the prod to beg
+			t.output(ab);             // echo
+			c.phs = i;                // set city phase
+			c.fnd = round + typx[i].phstart;
+			typcit(this, c);
+		}
+		display.delay(1);
 	}
-	else
-	{
-	    d.cityProdDemands();
-	    d.pcur(loc);				// position cursor
-	    while (true)
-	    {   int c = t.TTin();
-		ab = toupper(c);		// get char from tty
-		for (i = 7; i >= 0; i--)
-		    if (ab == typx[i].unichr)
-			break;
-		if (i >= 0)
-		    break;			// got a good one
-		t.bell();
-	    }
-	    t.curs(t.DS(0) + 25);		// where we want the prod to beg
-	    t.output(ab);			// echo
-	}
-	c.phs = i;				// set city phase
-	c.fnd = p.round + typx[i].phstart;
-	typcit(p,c);
-	d.delay(1);
-    }
 
 
 	/************************************
@@ -1676,50 +1729,58 @@ struct Player
      *	!=0	move successfully completed
      */
 
-    int cmove(Unit *u,dir_t *pr2)
-    {   static int c = ' ';
-      Player *p = this;
-      Display *d = p.display;
+	int cmove(Unit* u, dir_t* pr2)
+	{
+		static int c = ' ';
+		//Player* p = this;
+		version (Windows) {
+			//NewDisplay d = display;
+		} else {
+			Display* d = display;
+		}
 
-      u.abd = aboard(u);			// count how many are aboard
-      assert(chkloc(u.loc));
-      arrloc(u.loc);			// update loci & troopt
-      if (p.watch)
-      {   if (!d.insect(u.loc,2))
-		center(u.loc);
-	    p.curloc = u.loc;
-	    d.headng(u);			// type out the heading
-	    d.pcur(p.curloc);
-      }
-    version (none)
-    {
-      if (ifoeva(u))			// see if we need a new ifo
-      {   imes(" newifo ");
-	    newifo(u);			// select a new ifo
-	    curs(0x100 + 47);
-	    p.display.fncprt(u);
-      }
-      else
-	    imes(" movsel ");
-      *pr2 = movsel();			// select a trial move
-      cmes(DS(2),"movsel: "); decprt(*pr2);
-      movcor(u,pr2);				// return corrected move
-      imes(" movcor: "); decprt(*pr2); d.text.deleol();
-      if (!p.watch) return 1;
-      if (c == ' ' || (c == 'F' && u.typ == F)
-		   || (c == 'A' && u.typ == A)
-		   || (c == 'D' && u.typ == D)
-		   || (c == 'T' && u.typ == T))
-      {   if (!p.display.insect(u.loc,2))
-		center(u.loc);
-	    d.pcur(u.loc);
-	    //c = toupper(TTin());
-      }
-    }
-    else
-    {
-      if (ifoeva(u))			// see if we need a new ifo
-	    newifo(u);			// select a new ifo
+		u.abd = aboard(u);          // count how many are aboard
+		assert(chkloc(u.loc));
+		arrloc(u.loc);              // update loci & troopt
+		if (watch)
+		{
+			if (!display.insect(u.loc,2))
+				center(u.loc);
+			curloc = u.loc;
+			display.headng(u);      // type out the heading
+			display.pcur(curloc);
+		}
+		version (none)
+		{
+			if (ifoeva(u))          // see if we need a new ifo
+			{
+				imes(" newifo ");
+				newifo(u);          // select a new ifo
+				curs(0x100 + 47);
+				display.fncprt(u);
+			}
+			else
+				imes(" movsel ");
+			*pr2 = movsel();        // select a trial move
+			cmes(DS(2),"movsel: "); decprt(*pr2);
+			movcor(u, pr2);         // return corrected move
+			imes(" movcor: "); decprt(*pr2); d.text.deleol();
+			if (!watch) return 1;
+			if (c == ' ' || (c == 'F' && u.typ == F)
+			  || (c == 'A' && u.typ == A)
+			  || (c == 'D' && u.typ == D)
+			  || (c == 'T' && u.typ == T))
+			{
+				if (!display.insect(u.loc, 2))
+					center(u.loc);
+				d.pcur(u.loc);
+				//c = toupper(TTin());
+			}
+		}
+		else
+		{
+			if (ifoeva(u))          // see if we need a new ifo
+				newifo(u);          // select a new ifo
 
 			*pr2 = movsel(u);       // select a trial move
 			{
@@ -1761,29 +1822,28 @@ struct Player
 			  u.abd == 0 && u.ifo != IFOdamaged)
 			u.ifo = IFOnone;
 
-      switch(u.ifo)
-      {   case IFOnone:
-	    case IFOescort:
-	    case IFOfolshore:
-	    case IFOonboard:	return true;	// select a new ifo
-	    case IFOgotoT:		return ifo_gotoT(u);
-	    case IFOdirkam:		return ifo2(u);
-	    case IFOdir:		return ifo3(u);
-	    case IFOtarkam:
-	    case IFOtar:
-	    case IFOcity:		return ifo_city(u);
-	    case IFOgotoC:		return ifo6(u);
-	    case IFOdamaged:	return ifo8(u);
-	    case IFOstation:	return ifo9(u);
-	    case IFOgstation:	return ifo10(u);
-	    case IFOcitytar:	return ifo11(u);
-	    case IFOshipexplor:	return ifo13(u);
-	    case IFOloadarmy:	return ifo14(u);
-	    case IFOacitytar:	return ifo15(u);
-	    default:	assert(0);
-			    return 0;
-      }
-    }
+		final switch(u.ifo)
+		{
+			case IFOnone:
+			case IFOescort:
+			case IFOfolshore:
+			case IFOonboard:    return true;  // select a new ifo
+			case IFOgotoT:      return ifo_gotoT(u);
+			case IFOdirkam:     return ifo2(u);
+			case IFOdir:        return ifo3(u);
+			case IFOtarkam:
+			case IFOtar:
+			case IFOcity:       return ifo_city(u);
+			case IFOgotoC:      return ifo6(u);
+			case IFOdamaged:    return ifo8(u);
+			case IFOstation:    return ifo9(u);
+			case IFOgstation:   return ifo10(u);
+			case IFOcitytar:    return ifo11(u);
+			case IFOshipexplor: return ifo13(u);
+			case IFOloadarmy:   return ifo14(u);
+			case IFOacitytar:   return ifo15(u);
+		}
+	}
 
 	/***************************
 	 * Go to TT# (armies only)
@@ -2049,7 +2109,7 @@ struct Player
 
 	void newifo(Unit* u)
 	{
-		switch (u.typ)
+		final switch (u.typ)
 		{
 		case A:
 			ARMYif(u);
@@ -2069,8 +2129,6 @@ struct Player
 		case B:
 			SHIPif(u);
 			break;
-		default:
-			assert(0);
 		}
 		assert(u.ifo);
 	}
@@ -2087,41 +2145,46 @@ struct Player
 	{
 		dir_t r;
 
-      switch (u.ifo)
-      {   case IFOgotoT:
-	    case IFOgotoC:
-	    case IFOescort:
-		    r = seluni(u);
-		    break;
-	    case IFOdirkam:
-	    case IFOdir:
-		    r = seldir(u);
-		    break;
-	    case IFOtarkam:
-	    case IFOtar:
-	    case IFOcity:
-	    case IFOdamaged:
-	    case IFOstation:
-	    case IFOgstation:
-	    case IFOcitytar:
-	    case IFOshipexplor:
-	    case IFOloadarmy:
-	    case IFOacitytar:
-		    r = selloc(u);
-		    break;
-	    case IFOfolshore:
-		    r = selfol(u);
-		    break;
-	    case IFOonboard:
-		    r = -1;		// don't move
-		    break;
-	    default:
-		    display.text.cmes(display.text.DS(2),"ifo:");
-		    display.text.decprt(u.ifo);
-		    assert(0);
-      }
-      return r;
-    }
+		switch (u.ifo)
+		{
+		case IFOgotoT:
+		case IFOgotoC:
+		case IFOescort:
+			r = seluni(u);
+			break;
+		case IFOdirkam:
+		case IFOdir:
+			r = seldir(u);
+			break;
+		case IFOtarkam:
+		case IFOtar:
+		case IFOcity:
+		case IFOdamaged:
+		case IFOstation:
+		case IFOgstation:
+		case IFOcitytar:
+		case IFOshipexplor:
+		case IFOloadarmy:
+		case IFOacitytar:
+			r = selloc(u);
+			break;
+		case IFOfolshore:
+			r = selfol(u);
+			break;
+		case IFOonboard:
+			r = -1;				// don't move
+			break;
+		default:
+			version (Windows) {
+				display.panel[2] = format("ifo:%d", u.ifo);
+			} else {
+				display.text.cmes(display.text.DS(2),"ifo:");
+				display.text.decprt(u.ifo);
+			}
+			assert(0);
+		}
+		return r;
+	}
 
 
 	/**********************************
@@ -2261,24 +2324,26 @@ struct Player
 	 * Given a move, r2, correct it.
 	 */
 
-    void movcor(Unit *u,dir_t *pr2)
-    {
-      switch (u.typ)
-      {   case A:	ARMYco(u,pr2);
-		    break;
-	    case F:	FIGHco(u,pr2);
-		    break;
-	    case D:
-	    case T:
-	    case S:
-	    case R:
-	    case C:
-	    case B:	SHIPco(u,pr2);
-		    break;
-	    default:
-		    assert(0);
-      }
-    }
+	void movcor(Unit* u, dir_t* pr2)
+	{
+		final switch (u.typ)
+		{
+		case A:
+			ARMYco(u, pr2);
+			break;
+		case F:
+			FIGHco(u, pr2);
+			break;
+		case D:
+		case T:
+		case S:
+		case R:
+		case C:
+		case B:
+			SHIPco(u, pr2);
+			break;
+		}
+	}
 
 
 	/******************************
@@ -2682,7 +2747,7 @@ struct Player
 	if (figtar(u))			// attack enemy city
 	    return;
 
-		switch (empire.random(3))
+		final switch (empire.random(3))
 		{
 			case 0:
 				// Move towards an enemy army location within range.
@@ -2700,16 +2765,13 @@ struct Player
 					return;            // if found a loci[] target
 				break;
 
-	    case 2:
-		break;
-
-	    default:
-		assert(0);
+			case 2:
+				break;
+		}
+		// Move in random direction
+		u.ila = randir();
+		u.ifo = IFOdir;
 	}
-	// Move in random direction
-	u.ila = randir();
-	u.ifo = IFOdir;
-    }
 
     /*******************************
      * Look for a city in range. If found, set ifo, ila, and
@@ -3264,9 +3326,14 @@ struct Player
      * Watch computer strategy.
      */
 
-    void cwatch()
-    {   Display *d = display;
-	Text *t = &d.text;
+	void cwatch()
+	{
+		version (Windows) {
+			NewDisplay d = display;
+		} else {
+			Display* d = display;
+			Text* t = &d.text;
+		}
 
 		if (!watch)
 			return;
@@ -3290,47 +3357,59 @@ struct Player
 			Unit* u;
 			City* c;
 
-	    u = null;
-	    if (.typ[.map[curloc]] >= 0)
-	    {   u = fnduni(curloc);
-		if (u.own != num)
-		    u = null;
-	    }
-	    c = null;
-	    if (.typ[.map[curloc]] == X)
-	    {   c = fndcit(curloc);
-		if (c.own != num)
-		    c = null;
-	    }
-	    if (!d.insect(curloc,2))
-		center(curloc);
-	    if (u)
-		d.headng(u);
-	    else if (c)
-		typcit(this,c);
-	    d.pcur(curloc);
-	    cmd = t.TTin();
-	    switch (cmd)
-	    {
-		case 3:
-		case ESC:
-		    return;
-		case ' ':
-		    if (!c && u)
-		    {
-			Mmove(u);
-			if (u.loc)
-			    curloc = u.loc;
-		    }
-		    break;
-		default:
-		    if (cmdcur(&curloc,cmd,&r2))
-			break;
-		    t.bell();
-		    break;
-	    }
+			u = null;
+			if (.typ[.map[curloc]] >= 0)
+			{
+				u = fnduni(curloc);
+				if (u.own != num)
+					u = null;
+			}
+			c = null;
+			if (.typ[.map[curloc]] == X)
+			{
+				c = fndcit(curloc);
+				if (c.own != num)
+					c = null;
+			}
+			if (!d.insect(curloc,2))
+				center(curloc);
+			if (u) {
+				d.headng(u);
+			} else if (c) {
+				version (Windows) {
+					NewDisplay.typcit(this, c);
+				} else {
+					typcit(this, c);
+				}
+			}
+			d.pcur(curloc);
+
+			version (Windows) {
+				char cmd = getKeystroke();
+			} else {
+				int cmd = t.TTin();
+			}
+			switch (cmd)
+			{
+				case 3:
+				case ESC:
+					return;
+				case ' ':
+					if (!c && u)
+					{
+						Mmove(u);
+						if (u.loc)
+							curloc = u.loc;
+					}
+					break;
+				default:
+					if (cmdcur(&curloc, cmd, &r2))
+						break;
+					//t.bell();
+					break;
+			}
+		}
 	}
-    }
 
 /* ================================================================== */
 
@@ -3394,15 +3473,20 @@ struct Player
       int edge;				// # of seas around city
       Player *p = this;
 
-      p.cityct();				// bring city vars up to date
-      for (i = CITMAX; i--;)		// loop thru cities
-      {   c = &city[i];
-	    if (p.num != c.own)
-		continue;			// it's not ours
-	    loc = c.loc;
-	    edge = edger(loc);		// # of seas around city
-	    iniphs = c.phs;		// remember initial phase
-	    crowd = Ecrowd(loc);		// evaluate crowding conditions
+		p.cityct();                          // bring city vars up to date
+		for (i = CITMAX; i--;)               // loop thru cities
+		{
+			c = &city[i];
+			if (p.num != c.own)
+				continue;                    // it's not ours
+			loc = c.loc;
+			debug (cityph) MessageBoxA(global.hwnd,
+			  format("City %d: %d,%d, player %d", i, ROW(loc), COL(loc), p.num),
+			    "Debug", MB_OK);
+			assert (loc);
+			edge = edger(loc);               // # of seas around city
+			iniphs = c.phs;                  // remember initial phase
+			crowd = Ecrowd(loc);             // evaluate crowding conditions
 
 	    if (iniphs & ~7)		// if illegal phase
 		goto nophs;
@@ -3447,14 +3531,14 @@ struct Player
 	    c.fnd = p.round + typx[c.phs].phstart;
 	    p.cityct();			// update variables
 
-	    debug
-	    {
-		Display *d = p.display;
-		Text *t = &d.text;
-		t.curs(0x400);
-		t.vsmes("City at %u,%u from %d to %s",
-			ROW(loc),COL(loc),iniphs,d.nmes_p(c.phs,2));
-	    }
+			/+debug
+			{
+				Display* d = p.display;
+				Text* t = &d.text;
+				t.curs(0x400);
+				t.vsmes("City at %u,%u from %d to %s",
+						ROW(loc),COL(loc),iniphs,d.nmes_p(c.phs,2));
+			}+/
 
       } // for
     }
@@ -3792,13 +3876,59 @@ struct Player
      * Notify current player that player p is now on round r.
      */
 
-    void notify_round(Player *p,int r)
-    {   int plysave;
-	int i;
-	int co40;
-	char *s;
-	char buf[r.sizeof * 3 + 1];
-	Text *t = &display.text;
+	version (Windows) {
+		void notify_round(Player* p, int r)
+		{
+			int plysave;
+			int i;
+			char[] s;
+			//char[r.sizeof * 3 + 1] buf;
+			//Text* t = &display.text;
+			StatusPanel sp = display.panel;
+
+			if (!watch)
+				return;
+			i = p.num;
+			if (i >= 6)
+				return;
+
+			if (p.defeat)
+				s = "lost";
+			else
+			{
+				s = toString(r);
+				//sprintf(buf, "%d", r);
+				//s = buf;
+			}
+
+			/+if (r <= 1 || watch == DAwindows)
+			{+/
+				//t.curs((i - 1) << 8);
+
+				if (p == this)				// if it's this player
+				{
+					sp[i+3] = "Your  : " ~ s;
+				}
+				else
+				{
+					sp[i+3] = format("Plyr %d: %s", i, s);
+				}
+			/+}
+			else
+			{
+				t.curs(((i - 1) << 8) + 8);
+				t.vsmes(s);
+			}+/
+		}
+	} else {
+		void notify_round(Player* p, int r)
+		{
+			int plysave;
+			int i;
+			int co40;
+			char* s;
+			char buf[r.sizeof * 3 + 1];
+			Text* t = &display.text;
 
 	if (!watch)
 	    return;
@@ -3824,25 +3954,28 @@ struct Player
 	    else
 		t.curs((i - 1) << 8);
 
-	    if (p == this)		// if it's this player
-	    {   if (co40)
-		    t.vsmes("Yr: %s",s);
-		else
-		    t.vsmes("Your  : %s",s);
-	    }
-	    else
-	    {   if (co40)
-		    t.vsmes("P%d: %s",i,s);
-		else
-		    t.vsmes("Plyr %d: %s",i,s);
-	    }
+				if (p == this)				// if it's this player
+				{
+					if (co40)
+						t.vsmes("Yr: %s",s);
+					else
+						t.vsmes("Your  : %s",s);
+				}
+				else
+				{
+					if (co40)
+						t.vsmes("P%d: %s",i,s);
+					else
+						t.vsmes("Plyr %d: %s",i,s);
+				}
+			}
+			else
+			{
+				t.curs(((i - 1) << 8) + 8);
+				t.vsmes(s);
+			}
+		}
 	}
-	else
-	{
-	    t.curs(((i - 1) << 8) + 8);
-	    t.vsmes(s);
-	}
-    }
 
     /**************************************
      * Notify that p has been defeated.
@@ -3908,15 +4041,20 @@ struct Player
      * any extra.
      */
 
-    void drag(Unit *u)
-    {   int type = u.typ,		// T or C
-	    typabd = F,			// assume F (type == C)
-	    numabd = 0,			// number aboard
-	    numdes = 0,			// number destroyed
-	    nummax = u.hit;		// max # allowed
-        int i;
-        Player *p = this;
-        Display *d = p.display;
+	void drag(Unit* u)
+	{
+		int type = u.typ,            // T or C
+		typabd = F,                  // assume F (type == C)
+		numabd = 0,                  // number aboard
+		numdes = 0,                  // number destroyed
+		nummax = u.hit;              // max # allowed
+		int i;
+		Player* p = this;
+		version (Windows) {
+			NewDisplay d = p.display;
+		} else {
+			Display* d = p.display;
+		}
 
         if (type == T)			// if troop transport
         {   typabd = A;			// looking for armies
@@ -4157,9 +4295,14 @@ struct Player
      * Exchange display with that of another player.
      */
 
-    void exchange_display(Player *p)
-    {   Display *d;
-	int w;
+	void exchange_display(Player* p)
+	{
+		version (Windows) {
+			NewDisplay d;
+		} else {
+			Display* d;
+		}
+		int w;
 
 	if (p != this)
 	{
@@ -4185,18 +4328,19 @@ struct Player
      * Repaint display.
      */
 
-    void repaint()
-    {
-	if (watch)
+	void repaint()
 	{
-	    Display *d = display;
+		if (watch)
+		{
+			auto d = display;
 
-	    d.secbas = -1;
-	    d.text.clear();
-	    if (defeat || numleft == 1)
-		sector(0);
+			d.secbas = -1;
+			version (Windows) {} else {
+				d.text.clear();
+			}
+			if (defeat || numleft == 1)
+				sector(0);
+		}
 	}
-    }
-
 }
 
