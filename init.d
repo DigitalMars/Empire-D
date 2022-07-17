@@ -27,7 +27,8 @@ import var;
  */
 
 void citini()
-{ int loc,i,j,k;
+{
+	int loc,i,j,k;
 
 	/+for (i = CITMAX; i--;)
 	{
@@ -49,13 +50,14 @@ void citini()
 
 	// shuffle cities around
 
-  for (i = CITMAX / 2; i--;)
-  {	j = empire.random(CITMAX);
-	k = empire.random(CITMAX);
-	loc = city[j].loc;
-	city[j].loc = city[k].loc;
-	city[k].loc = loc;		// swap city locs
-  }
+	for (i = CITMAX / 2; i--;)
+	{
+		j = empire.random(CITMAX);
+		k = empire.random(CITMAX);
+		loc = city[j].loc;
+		city[j].loc = city[k].loc;
+		city[k].loc = loc;				// swap city locs
+	}
 }
 
 
@@ -68,30 +70,31 @@ void citini()
 
 int selmap()
 {
-    // Use internal maps
-    int j;
-    ubyte *d;
-    int i,a,c,n;
+	// Use internal maps
+	int j;
+	ubyte *d;
+	int i,a,c,n;
 
-    j = empire.random(5);
-    d = cast(ubyte *)(*mapdata.mapdata[j]);
-    i = MAPSIZE - 1;
-    while ((c = *d) != 0)		// 0 marks end of data
-    {	n = (c >> 2) & 63;		// count of map values - 1
-	a = c & 3;			// bottom 2 bits
-	if (a == 0 ||			// a must be 1,2,3
-	    c == -1 ||			// error reading file
-	    i - n < 0)			// too much data
+	j = empire.random(5);
+	d = cast(ubyte *)(*mapdata.mapdata[j]);
+	i = MAPSIZE - 1;
+	while ((c = *d) != 0)				// 0 marks end of data
 	{
-	    assert(0);
+		n = (c >> 2) & 63;				// count of map values - 1
+		a = c & 3;						// bottom 2 bits
+		if (a == 0 ||						// a must be 1,2,3
+			c == -1 ||						// error reading file
+			i - n < 0)						// too much data
+		{
+			assert(0);
+		}
+		while (n-- >= 0)
+			map[i--] = a;
+		d++;
 	}
-	while (n-- >= 0)
-	    map[i--] = a;
-	d++;
-    }
-    if (ranq() & 4) flip();
-    if (ranq() & 4) klip();		// random map rotations
-    return 0;
+	if (ranq() & 4) flip();
+	if (ranq() & 4) klip();				// random map rotations
+	return 0;
 }
 
 
@@ -100,14 +103,16 @@ int selmap()
  */
 
 void flip()
-{ int i,j,c;
+{
+	int i,j,c;
 
-  i = j = MAPSIZE / 2;
-  while (i--)
-  {	c = map[j];
-	map[j++] = map[i];
-	map[i] = c;
-  }
+	i = j = MAPSIZE / 2;
+	while (i--)
+	{
+		c = map[j];
+		map[j++] = map[i];
+		map[i] = c;
+	}
 }
 
 
@@ -116,18 +121,19 @@ void flip()
  */
 
 void klip()
-{ int row,i,j,c;
+{
+	int row,i,j,c;
 
-  row = 0;
-  while (row < MAPSIZE)
-  {	i = j = (Mcolmx + 1) / 2;
-	while (i--)
-	{   c = map[row + j];
-	    map[row + j++] = map[row + i];
-	    map[row + i] = c;
+	row = 0;
+	while (row < MAPSIZE)
+	{
+		i = j = (Mcolmx + 1) / 2;
+		while (i--)
+		{
+			c = map[row + j];
+			map[row + j++] = map[row + i];
+			map[row + i] = c;
+		}
+		row += Mcolmx + 1;
 	}
-	row += Mcolmx + 1;
-  }
 }
-
-
