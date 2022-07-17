@@ -22,6 +22,9 @@ import display;
 import path;
 import move;
 
+
+debug (tslice) import std.c.windows.windows;
+debug (tslice) bool debugSlices = true;
 // For each player
 
 struct Player
@@ -75,13 +78,36 @@ struct Player
      * Give time slice to a player.
      */
 
-    void tslice()
-    {   int i;
-	Unit *u;
-	Player *p = this;
+	void tslice()
+	in {
+		debug (tslice) {
+			if (round == 0) debugSlices = true;
+			if (debugSlices) {
+				if (MessageBoxA(global.hwnd,
+				  format("Entered tslice, player %d, round %d", num, round),
+				  "Debug", MB_OKCANCEL) == IDCANCEL) debugSlices = false;
+			}
+		}
+	}
+	out {
+		debug (tslice) if (debugSlices) {
+			if (MessageBoxA(global.hwnd,
+			  format("Exited tslice, player %d, round %d", num, round),
+			  "Debug", MB_OKCANCEL) == IDCANCEL) debugSlices = false;
+		}
+	}
+	body {
+		int i;
+		Unit* u;
+		Player* p = this;
 
-	if (!p.human)
-	{   int x;
+		if (!p.human)
+		{
+			version (Windows) {
+				char x = peekKeystroke();
+			} else {
+				int x = p.display.text.TTinr();
+			}
 
 			switch (x)
 			{
@@ -110,34 +136,59 @@ struct Player
 		if (numleft == 1)
 			return;
 
-	// Loop through all the units making sure that each unit moves
-	// once per round.
-	for (; p.uninum < unitop; p.uninum++)
-	{
-	    i = p.uninum;			// get unit number
-	    u = &unit[i];
-	    if (u.mov ||			// if unit has already moved
-		!u.loc ||			// if unit doesn't exist
-		u.own != p.num)		// if the unit isn't ours
-		continue;
-	    if (p.secflg &&		// if move by sector and
-		!p.display.insect(u.loc,2) &&	// not in current sector and
-		p.movedone)		// previous move was completed
-		    continue;
-	    if (p.watch)
-		p.secflg = true;		// back to moving by sector
-	    p.movedone = p.Mmove(u);	// move the unit
-	    if (p.movedone)
-		u.mov = true;		// indicate that it's moved
-	    return;
-	}
+		// Loop through all the units making sure that each unit moves
+		// once per round.
+		for (; p.uninum < unitop; p.uninum++)
+		{
+			i = p.uninum;                        // get unit number
+			u = &unit[i];
+			debug (tslice) if (debugSlices) {
+				MessageBoxA(global.hwnd, format("Got unit %d", i), "Debug", MB_OK);
+			}
+			if (u.mov ||                         // if unit has already moved
+				  !u.loc ||                      // if unit doesn't exist
+				  u.own != p.num) {              // if the unit isn't ours
+				debug (tslice) if (debugSlices) {
+					MessageBoxA(global.hwnd, "Unit can't move", "Debug", MB_OK);
+				}
+				if (p.watch && global.cursor != LOC_HIDDEN) {
+					debug (tslice) if (debugSlices) {
+						MessageBoxA(global.hwnd, "Unit is watched", "Debug", MB_OK);
+					}
+					//display.hideCursor();
+					assert (display !is null);
+					display.pcur(LOC_HIDDEN);
+					debug (tslice) if (debugSlices) {
+						MessageBoxA(global.hwnd, "Cursor hidden", "Debug", MB_OK);
+					}
+				}
+				continue;
+			}
+			debug (tslice) if (debugSlices) {
+				MessageBoxA(global.hwnd, "Unit can move", "Debug", MB_OK);
+			}
+			if (p.secflg &&                      // if move by sector and
+				  !p.display.insect(u.loc,2) &&  // not in current sector and
+				  p.movedone)                  // previous move was completed
+				continue;
+			if (p.watch)
+				p.secflg = true;                 // back to moving by sector
+			p.movedone = p.Mmove(u);             // move the unit
+			if (p.movedone)
+				u.mov = true;                    // indicate that it's moved
+			return;
+		}
 
-	// We've moved all the units for this round that are in this sector.
-	p.uninum = 0;			// reset
-	if (p.secflg)			// if only in sector showing
-	{   p.secflg = false;		// try anybody
-	    return;
-	}
+		debug (tslice) if (debugSlices) {
+			MessageBoxA(global.hwnd, "Iterated through units", "Debug", MB_OK);
+		}
+		// We've moved all the units for this round that are in this sector.
+		p.uninum = 0;           // reset
+		if (p.secflg)           // if only in sector showing
+		{
+			p.secflg = false;   // try anybody
+			return;
+		}
 
 	// We've moved all the units for this round.
 	if (p.watch)			// only by sector if we're watching
@@ -3958,10 +4009,10 @@ struct Player
         if (uatt.typ == S)			// if submarine
 	    Satt = 3;				// for torpedos
 
-      uatt.loc = ~0u;				// so fnduni won't find attacker
-      udef = fnduni(loc);			// get defender
-      uatt.loc = loc;				// restore
-      pdef = get(udef.own);
+		uatt.loc = -1;                    // so fnduni won't find attacker
+		udef = fnduni(loc);               // get defender
+		uatt.loc = loc;                   // restore
+		pdef = get(udef.own);
 
       if (udef.typ >= D)
 	    Hdef = udef.hit;

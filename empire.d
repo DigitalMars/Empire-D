@@ -22,6 +22,12 @@ import std.random;
 alias int dir_t;		// direction
 alias uint loc_t;		// location
 
+enum : loc_t {
+	LOC_INVALID,
+	LOC_HIDDEN,
+	LOC_LASTMAGIC = LOC_HIDDEN
+}
+
 void setran() { std.random.rand_seed(37, 49); }
 uint random(uint p) { return std.random.rand() % p; }
 uint ranq() { return std.random.rand(); }
@@ -157,24 +163,24 @@ enum
 
 enum
 {
-    IFOnone		= 0,	// no function assigned
-    IFOgotoT		= 1,	// A: go to troop transport
-    IFOdirkam		= 2,	// F: directional, kamikaze
-    IFOdir		= 3,	// directional
-    IFOtarkam		= 4,	// F: target, kamikaze
-    IFOtar		= 5,	// target location
-    IFOgotoC		= 6,	// F: goto carrier number
-    IFOcity		= 7,	// F,ships: goto city location
-    IFOdamaged		= 8,	// ships: damaged and going to port
-    IFOstation		= 9,	// C: stationed
-    IFOgstation		= 10,	// C: goto station
-    IFOcitytar		= 11,	// ships: goto city target
-    IFOescort		= 12,	// ships: escort TT number
-    IFOshipexplor	= 13,	// ships: look at unexplored territory
-    IFOloadarmy		= 14,	// T: load up armies
-    IFOacitytar		= 15,	// A: city target
-    IFOfolshore		= 16,	// A: follow shore
-    IFOonboard		= 17,	// A: on board a T
+    IFOnone       =  0,	// no function assigned
+    IFOgotoT      =  1,	// A: go to troop transport
+    IFOdirkam     =  2,	// F: directional, kamikaze
+    IFOdir        =  3,	// directional
+    IFOtarkam     =  4,	// F: target, kamikaze
+    IFOtar        =  5,	// target location
+    IFOgotoC      =  6,	// F: goto carrier number
+    IFOcity       =  7,	// F,ships: goto city location
+    IFOdamaged    =  8,	// ships: damaged and going to port
+    IFOstation    =  9,	// C: stationed
+    IFOgstation   = 10,	// C: goto station
+    IFOcitytar    = 11,	// ships: goto city target
+    IFOescort     = 12,	// ships: escort TT number
+    IFOshipexplor = 13,	// ships: look at unexplored territory
+    IFOloadarmy   = 14,	// T: load up armies
+    IFOacitytar   = 15,	// A: city target
+    IFOfolshore   = 16,	// A: follow shore
+    IFOonboard    = 17,	// A: on board a T
 }
 
 struct Unit
