@@ -643,19 +643,29 @@ version(none)
 
 		SelectClipRgn(hdc, global.sectorRegion);
 
-		r = ROW(global.ulcorner);
-		c = COL(global.ulcorner);
-		int rmax, cmax;
-		dx = cast(int)(10 * global.scalex);
-		dy = cast(int)(10 * global.scaley);
-		rmax = r + (global.offsety + global.pixely + dy - 1) / dy;
-		cmax = c + (global.offsetx + global.pixelx + dx - 1) / dx;
-		if (rmax > Mrowmx)
-		    rmax = Mrowmx + 1;
-		if (cmax > Mcolmx)
-		    cmax = Mcolmx + 1;
-		for (j = r; j < rmax; j++)
-		{   int y;
+			r = ROW(global.ulcorner);
+			c = COL(global.ulcorner);
+			int rmax, cmax;
+			dx = cast(int)(10 * global.scalex);
+			dy = cast(int)(10 * global.scaley);
+			rmax = r + (global.offsety + global.pixely + dy - 1) / dy;
+			cmax = c + (global.offsetx + global.pixelx + dx - 1) / dx;
+			if (rmax > Mrowmx)
+				rmax = Mrowmx + 1;
+			if (cmax > Mcolmx)
+				cmax = Mcolmx + 1;
+			debug (hilite) {
+				static loc_t lastCursor;
+				if (global.cursor != lastCursor) {
+					MessageBoxA(hwnd, format("Cursor %d, %d",
+					  ROW(global.cursor), COL(global.cursor)), "Debug",
+					  MB_OK);
+					lastCursor = global.cursor;
+				}
+			}
+			for (j = r; j < rmax; j++)
+			{
+				int y;
 
 		    y = global.sector.top + (j - r) * dy - global.offsety;
 		    if (y >= clipbox.bottom ||
@@ -673,19 +683,26 @@ version(none)
 			    x + dx < clipbox.left)
 			    continue;
 
-			h = global.mapvaltab[global.map[loc]];
-			if ((j % 10) == 0 && (i % 10) == 0 &&
-			    global.map[loc] == 0)
-			    h = global.unknown10;
-			mode = SRCCOPY;
-			if (loc == global.cursor && global.player.mode != mdSURV)
-			{   //h = global.hCursor;
-			    mode = NOTSRCCOPY;
+					h = global.mapvaltab[global.map[loc]];
+					if ((j % 10) == 0 && (i % 10) == 0 &&
+						  global.map[loc] == 0)
+						h = global.unknown10;
+					mode = SRCCOPY;
+
+					if (/+global.player.num == plynum
+						  &&+/ loc == global.cursor
+						  && global.cursor > LOC_LASTMAGIC
+						  //&& !global.player.display.cursorHidden
+						  && global.player.mode != mdSURV) {
+						/+debug (hilite) MessageBoxA(hwnd,
+						  format("Cursor %d, %d", r, c), "Debug", MB_OK);+/
+						mode = NOTSRCCOPY;
+					}
+
+					DrawBitmap(hdc, x, y, h,
+					   global.scalex, global.scaley, mode);
+				}
 			}
-			DrawBitmap(hdc, x, y, h,
-				   global.scalex, global.scaley, mode);
-		    }
-		}
 
 		// Draw a rectangle around the map edge
 		int x1,y1,x2,y2;
