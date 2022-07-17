@@ -1,0 +1,1 @@
+"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\RC" /i"C:\Program Files\Microsoft SDKs\Windows\v7.1\Include" empire.rc
