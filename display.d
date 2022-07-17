@@ -26,113 +26,122 @@ import winmain;
 import maps;
 import var;
 
-// For each display
-
-struct Display
+/***
+ *	For each display
+ *
+ *	Deprecated:
+ *		Superseded by NewDisplay.  However, non-Windows versions will still
+ *		need this until StatusPanel is implemented for the platform.
+ */
+deprecated struct Display
 {
-    Text text;
-    int timeinterval;	// 100ths of a second msg delay time
-    uint maptab;	// map values for the players
+	Text text;
+	int timeinterval;   // 100ths of a second msg delay time
+	uint maptab;        // map values for the players
 
-    int secbas;		// position of upper left corner of sector
-    uint Smin;		// text row,col coordinates of upper left sector display
-    uint Smax;		// text row,col coordinates of lower right sector display
+	int secbas;     // position of upper left corner of sector
+	uint Smin;      // text row,col coordinates of upper left sector display
+	uint Smax;      // text row,col coordinates of lower right sector display
 
-    /***********************************
-     * Clear the current sector that's showing.
-     */
+	/***********************************
+	 * Clear the current sector that's showing.
+	 */
 
-    void clrsec()
-    {
-	Display *d = this;
-	Text *t = &d.text;
+	void clrsec()
+	{
+		Display* d = this;
+		Text* t = &d.text;
 
-	//t.cmes(d.Smin," ");		// " " because of bug in BIOS
-	//t.deleos();			// delete to end of screen
+		//t.cmes(d.Smin," ");				// " " because of bug in BIOS
+		//t.deleos();						// delete to end of screen
 
-	d.secbas = -1;			// indicate screen is blank
-    }
-
-
-    /***************************
-     * Print out map value at loc.
-     */
-
-    void mapprt(loc_t loc)
-    {   int x;
-        Display *d = this;
-        Text *t = &d.text;
-
-        if (!t.watch) return;
-        assert(loc < MAPSIZE);
-        if (!insect(loc,0)) return;		// if not in current sector
-
-        invalidateLoc(loc);
-    }
+		d.secbas = -1;						// indicate screen is blank
+	}
 
 
-    /***************************
-     * Return true if loc is in the current sector showing,
-     * with a border of n spaces. If the sector edge lies on
-     * a map edge, the n spaces do not apply for that edge.
-     * Return false if secbas[] = -1.
-     */
+	/***************************
+	 * Print out map value at loc.
+	 */
 
-    int insect(loc_t loc,uint n)
-    {   int br,bc,lr,lc;
-        int x;
-        int sb;
-        Display *d = this;
+	void mapprt(loc_t loc)
+	{
+		int x;
+		Display* d = this;
+		Text* t = &d.text;
 
-      assert(loc < MAPSIZE && n < 100);
-      sb = d.secbas;
-      if (sb == -1)
-	    return false;
-      br = sb / (Mcolmx + 1);
-      bc = sb % (Mcolmx + 1);
+		if (!t.watch) return;
+		assert(loc < MAPSIZE);
+		if (!insect(loc,0)) return;				// if not in current sector
 
-      lr = loc / (Mcolmx + 1);
-      lc = loc % (Mcolmx + 1);
+		invalidateLoc(loc);
+	}
 
-      x = (br) ? br + n : br;		// min row we can be on
-      if (lr < x) return false;
 
-      x = (bc) ? bc + n : bc;		// min col we can be on
-      if (lc < x) return false;
+	/***************************
+	 * Return true if loc is in the current sector showing,
+	 * with a border of n spaces. If the sector edge lies on
+	 * a map edge, the n spaces do not apply for that edge.
+	 * Return false if secbas[] = -1.
+	 */
 
-      br += (d.Smax - d.Smin) >> 8;
-      bc += (d.Smax - d.Smin) & 0xFF;
+	int insect(loc_t loc,uint n)
+	{
+		int br,bc,lr,lc;
+		int x;
+		int sb;
+		Display* d = this;
 
-      x = (br != Mrowmx) ? br - n : br;	// max row we can be on
-      if (lr > x) return false;
+		assert(loc < MAPSIZE && n < 100);
+		sb = d.secbas;
+		if (sb == -1)
+			return false;
+		br = sb / (Mcolmx + 1);
+		bc = sb % (Mcolmx + 1);
 
-      x = (bc != Mcolmx) ? bc - n : bc;	// max col we can be on
-      return lc <= x;
-    }
+		lr = loc / (Mcolmx + 1);
+		lc = loc % (Mcolmx + 1);
 
-    /************************************
-     * Adjust loc so it makes a valid sector base.
-     */
+		x = (br) ? br + n : br;				// min row we can be on
+		if (lr < x) return false;
 
-    loc_t adjust(loc_t loc)
-    {   int row,col,size,rowsize,colsize;
-        Display *d = this;
+		x = (bc) ? bc + n : bc;				// min col we can be on
+		if (lc < x) return false;
 
-        row = ROW(loc);
-        col = COL(loc);
-        if (col == Mcolmx)			// kludge to fix wrap-around
-        {   col = 0;
-	    row++;
-        }
-        size = d.Smax - d.Smin;			// display size
-        rowsize = size >> 8;			// # of rows - 1
-        colsize = size & 0xFF;
-        if (row < 0) row = 0;
-        if (row > Mrowmx - rowsize) row = Mrowmx - rowsize;
-        if (col < 0) col = 0;
-        if (col > Mcolmx - colsize) col = Mcolmx - colsize;
-        return (row * (Mcolmx + 1) + col);	// return adjusted value
-    }
+		br += (d.Smax - d.Smin) >> 8;
+		bc += (d.Smax - d.Smin) & 0xFF;
+
+		x = (br != Mrowmx) ? br - n : br;		// max row we can be on
+		if (lr > x) return false;
+
+		x = (bc != Mcolmx) ? bc - n : bc;		// max col we can be on
+		return lc <= x;
+	}
+
+	/************************************
+	 * Adjust loc so it makes a valid sector base.
+	 */
+
+	loc_t adjust(loc_t loc)
+	{
+		int row,col,size,rowsize,colsize;
+		Display* d = this;
+
+		row = ROW(loc);
+		col = COL(loc);
+		if (col == Mcolmx)						// kludge to fix wrap-around
+		{
+			col = 0;
+			row++;
+		}
+		size = d.Smax - d.Smin;						// display size
+		rowsize = size >> 8;						// # of rows - 1
+		colsize = size & 0xFF;
+		if (row < 0) row = 0;
+		if (row > Mrowmx - rowsize) row = Mrowmx - rowsize;
+		if (col < 0) col = 0;
+		if (col > Mcolmx - colsize) col = Mcolmx - colsize;
+		return (row * (Mcolmx + 1) + col);		// return adjusted value
+	}
 
 	void initialize()
 	{
@@ -144,151 +153,153 @@ struct Display
 		text.speaker = 1;
 		text.Tmax = (23 << 8) + 78;
 
-	    text.narrow = 0;
-	    maptab = 0;
-	    timeinterval = 0;
-	    secbas = -1;
-	    Smin = 0x400;
-	    Smax = text.Tmax - ((1 << 8) + 2);
+		text.narrow = 0;
+		maptab = 0;
+		timeinterval = 0;
+		secbas = -1;
+		Smin = 0x400;
+		Smax = text.Tmax - ((1 << 8) + 2);
 
-        version (Windows)
-        {
-	    Smin = 0;
-	    Smax = 11 * 256 + 11;	// 12*12 display
-        }
-    }
-
-    int rusure()
-    {
-	return 1;
-    /+
-        char s;
-
-        text.cmes(text.DS(3),"Are you sure (Y or N)? N\1\b");
-        s = toupper(text.TTin());
-        text.output(s);				// echo
-        return s == 'Y';
-     +/
-    }
-
-    void your()
-    {
-	text.smes(text.narrow ? "Yr " : "Your ");
-    }
-
-
-    void enemy()
-    {
-	text.smes(text.narrow ? "En " : "Enemy ");
-    }
-
-    /**********************
-     */
-
-    void city_attackown()
-    {
-	Text *t = &text;
-
-	t.cmes(text.DS(2), "Attacked your own city!\1\2");
-	t.cmes(text.DS(3),"\1");
-	if (t.watch)
-	    sound_gun();
-	t.cmes(text.DS(3),"Your army was executed.\1\2");
-	delay(1);
-    }
-
-    /*****************
-     */
-
-    void city_repelled(loc_t loc)
-    {
-	Text *t = &text;
-
-	if (t.watch)
-	{   t.TTcurs(text.DS(2));
-	    t.vsmes("City under attack at %u,%u.",ROW(loc),COL(loc));
-	    t.deleol();		// delete to end of line
-	    sound_subjugate();
-	    t.cmes(text.DS(3),"Enemy invasion repelled.\1\2");
-	    delay(1);
+		version (Windows)
+		{
+			Smin = 0;
+			Smax = 11 * 256 + 11;		// 12*12 display
+		}
 	}
-    }
 
-    /**********
-     * Your city was conquered.
-     */
-
-    void city_conquered(loc_t loc)
-    {
-	Text *t = &text;
-
-	if (t.watch)
+	int rusure()
 	{
-	    
-	    t.TTcurs(text.DS(2));
-	    t.vsmes("City is under attack at %u,%u.",ROW(loc),COL(loc));
-	    t.deleol();		// delete to end of line
-	    sound_crushed();
-	    t.cmes(text.DS(3),"Your city was conquered!\1\2");
-	    delay(1);
+		return 1;
+	/+
+		char s;
+
+		text.cmes(text.DS(3),"Are you sure (Y or N)? N\1\b");
+		s = toupper(text.TTin());
+		text.output(s);								// echo
+		return s == 'Y';
+	 +/
 	}
-    }
 
-    /**************************
-     */
-
-    void city_subjugated()
-    {   Text *t = &text;
-
-	if (t.watch)
+	void your()
 	{
-	    t.cmes(text.DS(2),"Attacking city!\1");
-	    t.cmes(text.DS(3),"\1");
-	    sound_subjugate();
-	    if (t.narrow > 1)
-	    {
-		t.cmes(text.DS(2),"City subjugated! Army\1");
-		t.cmes(text.DS(3),"enforces iron control.\1\2");
-	    }
-	    else
-	    {
-		t.cmes(text.DS(2),"The city has been subjugated! The army\1");
-		t.cmes(text.DS(3),"was dispersed to enforce iron control.\1\2");
-	    }
-	    delay(1);
+		text.smes(text.narrow ? "Yr " : "Your ");
 	}
-    }
 
-    /**************************
-     */
 
-    void city_crushed()
-    {   Text *t = &text;
-
-	if (t.watch)
+	void enemy()
 	{
-	    t.cmes(text.DS(2),"Attacking city!\1");
-	    t.cmes(text.DS(3),"\1");
-	    sound_crushed();
-	    if (t.narrow > 1)
-	    {
-		t.cmes(text.DS(2), "Your assault crushed!\1");
-		t.cmes(text.DS(3), "Your army destroyed.\1\2");
-	    }
-	    else
-	    {
-		t.cmes(text.DS(2),text.narrow
-			? "The city crushed your assault!\1\2"
-			: "The city's defenses crushed your assault!\1\2");
-		t.cmes(text.DS(3),"Your army destroyed.\1\2");
-	    }
-	    delay(1);
+		text.smes(text.narrow ? "En " : "Enemy ");
 	}
-    }
 
-    /**********************
-     * Print number of units destroyed
-     */
+	/**********************
+	 */
+
+	void city_attackown()
+	{
+		Text* t = &text;
+
+		t.cmes(text.DS(2), "Attacked your own city!\1\2");
+		t.cmes(text.DS(3), "\1");
+		if (t.watch)
+			sound_gun();
+		t.cmes(text.DS(3),"Your army was executed.\1\2");
+		delay(1);
+	}
+
+	/*****************
+	 */
+
+	void city_repelled(loc_t loc)
+	{
+		Text* t = &text;
+
+		if (t.watch)
+		{
+			t.TTcurs(text.DS(2));
+			t.vsmes("City under attack at %u,%u.",ROW(loc),COL(loc));
+			t.deleol();				// delete to end of line
+			sound_subjugate();
+			t.cmes(text.DS(3),"Enemy invasion repelled.\1\2");
+			delay(1);
+		}
+	}
+
+	/**********
+	 * Your city was conquered.
+	 */
+
+	void city_conquered(loc_t loc)
+	{
+		Text* t = &text;
+
+		if (t.watch)
+		{
+			t.TTcurs(text.DS(2));
+			t.vsmes("City is under attack at %u,%u.",ROW(loc),COL(loc));
+			t.deleol();				// delete to end of line
+			sound_crushed();
+			t.cmes(text.DS(3),"Your city was conquered!\1\2");
+			delay(1);
+		}
+	}
+
+	/**************************
+	 */
+
+	void city_subjugated()
+	{
+		Text* t = &text;
+
+		if (t.watch)
+		{
+			t.cmes(text.DS(2),"Attacking city!\1");
+			t.cmes(text.DS(3),"\1");
+			sound_subjugate();
+			if (t.narrow > 1)
+			{
+				t.cmes(text.DS(2),"City subjugated! Army\1");
+				t.cmes(text.DS(3),"enforces iron control.\1\2");
+			}
+			else
+			{
+				t.cmes(text.DS(2),"The city has been subjugated! The army\1");
+				t.cmes(text.DS(3),"was dispersed to enforce iron control.\1\2");
+			}
+			delay(1);
+		}
+	}
+
+	/**************************
+	 */
+
+	void city_crushed()
+	{
+		Text* t = &text;
+
+		if (t.watch)
+		{
+			t.cmes(text.DS(2),"Attacking city!\1");
+			t.cmes(text.DS(3),"\1");
+			sound_crushed();
+			if (t.narrow > 1)
+			{
+				t.cmes(text.DS(2), "Your assault crushed!\1");
+				t.cmes(text.DS(3), "Your army destroyed.\1\2");
+			}
+			else
+			{
+				t.cmes(text.DS(2),text.narrow
+						? "The city crushed your assault!\1\2"
+						: "The city's defenses crushed your assault!\1\2");
+				t.cmes(text.DS(3),"Your army destroyed.\1\2");
+			}
+			delay(1);
+		}
+	}
+
+	/**********************
+	 * Print number of units destroyed
+	 */
 
 	void killml(int type,int num)
 	{
@@ -302,26 +313,27 @@ struct Display
 		}
 	}
 
-    /*************************************
-     * Overloaded T or C.
-     */
+	/*************************************
+	 * Overloaded T or C.
+	 */
 
-    void overloaded(loc_t loc,int typabd,int numdes)
-    {   Text *t = &text;
-
-	if (t.watch)
+	void overloaded(loc_t loc,int typabd,int numdes)
 	{
-	    t.curs(text.DS(2));
-	    t.vsmes("Your ship is overloaded at %u,%u.",ROW(loc),COL(loc));
-	    t.deleol();
-	    killml(typabd,numdes);	// print message
-	    sound_aground();
-	}
-    }
+		Text* t = &text;
 
-    /************************************
-     * Type out the heading of the unit.
-     */
+		if (t.watch)
+		{
+			t.curs(text.DS(2));
+			t.vsmes("Your ship is overloaded at %u,%u.",ROW(loc),COL(loc));
+			t.deleol();
+			killml(typabd,numdes);		// print message
+			sound_aground();
+		}
+	}
+
+	/************************************
+	 * Type out the heading of the unit.
+	 */
 
 	void headng(Unit* u)
 	{
@@ -380,9 +392,9 @@ struct Display
 	}
 
 
-    /*********************
-     * Type out unit message, plural or singular
-     */
+	/*********************
+	 * Type out unit message, plural or singular
+	 */
 
 	char[] nmes_p(int type,int num)
 	in
@@ -416,59 +428,64 @@ struct Display
 			[ "B","Bs" ]
 		];
 
-	if (text.narrow)
-	    return (num == 1) ? msgn[type][0] : msgn[type][1];
-	else
-	    return (num == 1) ? msg[type][0] : msg[type][1];
-    }
-
-
-    void landing(Unit *u)
-    {   Text *t = &text;
-
-	if (t.watch)
-	{
-	    t.curs(text.DS(1));
-	    t.vsmes("Landing confirmed at %u,%u.",ROW(u.loc),COL(u.loc));
-	    t.deleol();
-	    delay(2);
+		if (text.narrow)
+			return (num == 1) ? msgn[type][0] : msgn[type][1];
+		else
+			return (num == 1) ? msg[type][0] : msg[type][1];
 	}
-    }
 
-    void boarding(Unit *u)
-    {   Text *t = &text;
 
-	if (t.watch)
+	void landing(Unit* u)
 	{
-	    t.curs(text.DS(1));
-	    t.vsmes("Boarding confirmed at %u,%u.",ROW(u.loc),COL(u.loc));
-	    t.deleol();
-	    delay(2);
+		Text* t = &text;
+
+		if (t.watch)
+		{
+			t.curs(text.DS(1));
+			t.vsmes("Landing confirmed at %u,%u.",ROW(u.loc),COL(u.loc));
+			t.deleol();
+			delay(2);
+		}
 	}
-    }
 
-    void aground(Unit *u)
-    {   Text *t = &text;
-
-	if (t.watch)
+	void boarding(Unit* u)
 	{
-	    if (t.narrow > 1)
-		t.cmes(text.DS(1),"Ship ran aground, sank.\1\2");
-	    else
-		t.cmes(text.DS(1),"Your ship ran aground and sank.\1\2");
-	    sound_aground();
+		Text* t = &text;
+
+		if (t.watch)
+		{
+			t.curs(text.DS(1));
+			t.vsmes("Boarding confirmed at %u,%u.",ROW(u.loc),COL(u.loc));
+			t.deleol();
+			delay(2);
+		}
 	}
-    }
 
-    void armdes(Unit *u)
-    {   Text *t = &text;
+	void aground(Unit* u)
+	{
+		Text* t = &text;
 
-	if (t.watch)
-	    t.cmes(text.DS(1),"Your army was destroyed.\1\2");
-    }
+		if (t.watch)
+		{
+			if (t.narrow > 1)
+				t.cmes(text.DS(1),"Ship ran aground, sank.\1\2");
+			else
+				t.cmes(text.DS(1),"Your ship ran aground and sank.\1\2");
+			sound_aground();
+		}
+	}
 
-    void drown(Unit *u)
-    {   Text *t = &text;
+	void armdes(Unit* u)
+	{
+		Text* t = &text;
+
+		if (t.watch)
+			t.cmes(text.DS(1),"Your army was destroyed.\1\2");
+	}
+
+	void drown(Unit* u)
+	{
+		Text* t = &text;
 
 		if (t.watch)
 		{
@@ -487,46 +504,49 @@ struct Display
 		}
 	}
 
-    void shot_down(Unit *u)
-    {   Text *t = &text;
-
-	if (t.watch)
+	void shot_down(Unit* u)
 	{
-	    t.cmes(text.DS(2),"Fighter attacks city!\1");
-	    sound_flyby();
-	    sound_ackack();
-	    sound_ackack();
-	    t.cmes(text.DS(3),"Fighter shot down!\1");
-	    sound_fcrash();
+		Text* t = &text;
+
+		if (t.watch)
+		{
+			t.cmes(text.DS(2),"Fighter attacks city!\1");
+			sound_flyby();
+			sound_ackack();
+			sound_ackack();
+			t.cmes(text.DS(3),"Fighter shot down!\1");
+			sound_fcrash();
+		}
 	}
-    }
 
-    void no_fuel(Unit *u)
-    {   Text *t = &text;
-
-	if (t.watch)
+	void no_fuel(Unit* u)
 	{
-	    t.cmes(text.DS(2), "Fighter ran out of fuel...\1\2");
-	    sound_fuel();
-	    t.cmes(text.DS(3), "...and crashed!\1\2");
-	    sound_fcrash();
+		Text* t = &text;
+
+		if (t.watch)
+		{
+			t.cmes(text.DS(2), "Fighter ran out of fuel...\1\2");
+			sound_fuel();
+			t.cmes(text.DS(3), "...and crashed!\1\2");
+			sound_fcrash();
+		}
 	}
-    }
 
-    void docking(Unit *u, loc_t loc)
-    {   Text *t = &text;
-
-	if (t.watch)
+	void docking(Unit* u, loc_t loc)
 	{
-	    t.cmes(text.DS(1), "Ship docked at \1");
-	    t.locdot(loc);
-	    t.deleol();
-	}
-    }
+		Text* t = &text;
 
-    /***************************************
-     * Unit u is under attack.
-     */
+		if (t.watch)
+		{
+			t.cmes(text.DS(1), "Ship docked at \1");
+			t.locdot(loc);
+			t.deleol();
+		}
+	}
+
+	/***************************************
+	 * Unit u is under attack.
+	 */
 
 	void underattack(Unit* u)
 	{
@@ -548,13 +568,13 @@ struct Display
 	}
 
 
-    /***************************************
-     * Perform battle.
-     * Input:
-     *	pnum	player number for this display
-     *	uwin	winner
-     *	ulos	loser
-     */
+	/***************************************
+	 * Perform battle.
+	 * Input:
+	 *	pnum	player number for this display
+	 *	uwin	winner
+	 *	ulos	loser
+	 */
 
 	void battle(Player* p, Unit* uwin, Unit* ulos)
 	{
@@ -562,8 +582,9 @@ struct Display
 		char[] p2;
 		Text* t = &text;
 
-	if (t.watch)
-	{   int abd;
+		if (t.watch)
+		{
+			int abd;
 
 			t.curs(text.DS(2));
 			//t.vsmes("%s%.*s destroyed.",youene_p(p,ulos.own),nmes_p(ulos.typ,1));
@@ -588,25 +609,25 @@ struct Display
 			t.deleol();
 			t.flush();
 
-	    ShowBlast(1, ulos.loc);
-	    switch (ulos.typ)
-	    {
-		case A:
-		    sound_gun();
-		    break;
-		case F:
-		    sound_ackack();
-		    break;
-		default:
-		    sound_bang();
-		    break;
-	    }
-	    ShowBlast(0, ulos.loc);
+			ShowBlast(1, ulos.loc);
+			switch (ulos.typ)
+			{
+				case A:
+					sound_gun();
+					break;
+				case F:
+					sound_ackack();
+					break;
+				default:
+					sound_bang();
+					break;
+			}
+			ShowBlast(0, ulos.loc);
+		}
 	}
-    }
 
-    /*************************************
-     */
+	/*************************************
+	 */
 
 	char[] youene_p(Player* p,int num)
 	{
@@ -620,49 +641,52 @@ struct Display
 		}
 	}
 
-    /******************************
-     * Notify player that pdef has been defeated.
-     */
+	/******************************
+	 * Notify player that pdef has been defeated.
+	 */
 
-    void plyrcrushed(Player *pdef)
-    {
-	Text *t = &text;
-	if (t.watch)
+	void plyrcrushed(Player* pdef)
 	{
-	    t.cmes(text.DS(2),"Player ");
-	    t.decprt(pdef.num);
-	    t.imes(" has been crushed.\1\2");
-	    t.curs(text.DS(3));
-	    t.deleol();
-	    sound_taps();
-	    delay(4);
+		Text* t = &text;
+		if (t.watch)
+		{
+			t.cmes(text.DS(2),"Player ");
+			t.decprt(pdef.num);
+			t.imes(" has been crushed.\1\2");
+			t.curs(text.DS(3));
+			t.deleol();
+			sound_taps();
+			delay(4);
+		}
 	}
-    }
 
-    /***********************************
-     * Notify player that he's lost.
-     */
+	/***********************************
+	 * Notify player that he's lost.
+	 */
 
-    void lost()
-    {
-	Text *t = &text;
-	if (t.watch)
-	{   t.cmes(text.DS(0),"The enemy has crushed your feeble forces!\1");
-	    t.cmes(text.DS(1),"Your contemptible dreams of world\1");
-	    t.cmes(text.DS(2),"Empire are finished!\1");
-	    t.cmes(text.DS(3),"\1");
-	    delay(10);
+	void lost()
+	{
+		Text* t = &text;
+		if (t.watch)
+		{
+			t.cmes(text.DS(0),"The enemy has crushed your feeble forces!\1");
+			t.cmes(text.DS(1),"Your contemptible dreams of world\1");
+			t.cmes(text.DS(2),"Empire are finished!\1");
+			t.cmes(text.DS(3),"\1");
+			delay(10);
+			global.dirty = false;
+		}
 	}
-    }
 
-    /**************************************
-     */
+	/**************************************
+	 */
 
-    void produce(City *c)
-    {
-	Text *t = &text;
-	if (t.watch)
-	{   char *p;
+	void produce(City* c)
+	{
+		Text* t = &text;
+		if (t.watch)
+		{
+			char* p;
 
 			t.curs(text.DS(0));
 			p = (c.phs == A || c.phs == C) ? "n" : "";
@@ -672,25 +696,26 @@ struct Display
 		}
 	}
 
-    /**************************************
-     */
+	/**************************************
+	 */
 
-    void overpop(int flag)
-    {
-	if (text.watch)
+	void overpop(int flag)
 	{
-	    //text.cmes(text.DS(2),flag ? "Overpop" : "       ");
+		if (text.watch)
+		{
+			//text.cmes(text.DS(2),flag ? "Overpop" : "	   ");
+		}
 	}
-    }
 
-    /**********************************
-     * Print function of unit.
-     */
+	/**********************************
+	 * Print function of unit.
+	 */
 
-    void fncprt(Unit *u)
-    {   static char dtab[9] = "DEWQAZXC";	// directions
-	Player *p = Player.get(u.own);
-	Text *t = &text;
+	void fncprt(Unit* u)
+	{
+		static char dtab[9] = "DEWQAZXC";		// directions
+		Player* p = Player.get(u.own);
+		Text* t = &text;
 
 		if (!t.watch)						// if not watching this guy
 			return;
@@ -738,115 +763,116 @@ struct Display
 		t.deleol();
 	}
 
-    /************************************
-     */
+	/************************************
+	 */
 
-    void setdispsize(int rows,int cols)
-    {
-	//PRINTF("Display::setdispsize(rows=%d, cols=%d)\n",rows,cols);
-
-	version (Windows)
+	void setdispsize(int rows,int cols)
 	{
-	    version (0)
-	    {
-		text.narrow = 0;
-		if (global.cxClient < 75 * 10)
-		    text.narrow = 1;
-		if (global.cxClient <= 12 * 10)
-		    text.narrow = 2;
-	    }
-	    else
-	    {
-		text.narrow = (cols < 75);	// use 40 column formatting
-		text.narrow = 2;
-	    }
-	    text.Tmax = (rows - 1) * 256 + cols - 1;
-	}
-	else
-	{
-	    text.narrow = (cols < 75);	// use 40 column formatting
-	    if (text.narrow)
-		Smin = (5 * 256) + 0;		// u l edge of map
-	    else
-		Smin = (4 * 256) + 0;
+		//PRINTF("Display::setdispsize(rows=%d, cols=%d)\n",rows,cols);
 
-	    text.Tmax = (rows - 1) * 256 + cols - 1;
-
-	    // Scale back if display is bigger than we can use
-	    if (cols > Mcolmx + 1 + 3 - 1)
-		cols = Mcolmx + 1 + 3 - 1;
-	    if (rows > 4 + Mrowmx + 1 + 1)
-		rows = 4 + Mrowmx + 1 + 1;
-
-	    Smax = (rows - 2) * 256 + cols - 3;
-	}
-    }
-
-
-    /********************************
-     * Position cursor where loc is.
-     */
-
-    void pcur(loc_t loc)
-    {
-	version (Windows)
-	{
-	    loc_t oldloc;
-
-	    if (!text.watch)
-		return;
-	    assert(loc < MAPSIZE);
-	    if (global.cursor == loc)
-		return;
-
-	    oldloc = global.cursor;
-	    global.cursor = loc;
-	    if (adjSector(global.scalex, global.scaley))
-		InvalidateRect(global.hwnd, &global.sector, false);
-	    else
-	    {
-		if (global.player.mode == mdTO)
+		version (Windows)
 		{
-		    invalidateLocRect(global.player.frmloc, oldloc);
-		    invalidateLocRect(global.player.frmloc, loc);
-		}
-		else if (global.player.mode == mdSURV)
-		{
-		    InvalidateRect(global.hwnd, &global.sector, false);
+			version (0)
+			{
+				text.narrow = 0;
+				if (global.cxClient < 75 * 10)
+					text.narrow = 1;
+				if (global.cxClient <= 12 * 10)
+					text.narrow = 2;
+			}
+			else
+			{
+				text.narrow = (cols < 75);		// use 40 column formatting
+				text.narrow = 2;
+			}
+			text.Tmax = (rows - 1) * 256 + cols - 1;
 		}
 		else
 		{
-		    invalidateLoc(oldloc);
-		    invalidateLoc(loc);
+			text.narrow = (cols < 75);		// use 40 column formatting
+			if (text.narrow)
+				Smin = (5 * 256) + 0;				// u l edge of map
+			else
+				Smin = (4 * 256) + 0;
+
+			text.Tmax = (rows - 1) * 256 + cols - 1;
+
+			// Scale back if display is bigger than we can use
+			if (cols > Mcolmx + 1 + 3 - 1)
+				cols = Mcolmx + 1 + 3 - 1;
+			if (rows > 4 + Mrowmx + 1 + 1)
+				rows = 4 + Mrowmx + 1 + 1;
+
+			Smax = (rows - 2) * 256 + cols - 3;
 		}
-	    }
 	}
-	else
+
+
+	/********************************
+	 * Position cursor where loc is.
+	 */
+
+	void pcur(loc_t loc)
 	{
-	    assert(loc < MAPSIZE);
-	    text.curs(rowcol(loc - secbas) + Smin);
+		version (Windows)
+		{
+			loc_t oldloc;
+
+			if (!text.watch)
+				return;
+			assert(loc < MAPSIZE);
+			if (global.cursor == loc)
+				return;
+
+			oldloc = global.cursor;
+			global.cursor = loc;
+			if (adjSector(global.scalex, global.scaley))
+				InvalidateRect(global.hwnd, &global.sector, false);
+			else
+			{
+				if (global.player.mode == mdTO)
+				{
+					invalidateLocRect(global.player.frmloc, oldloc);
+					invalidateLocRect(global.player.frmloc, loc);
+				}
+				else if (global.player.mode == mdSURV)
+				{
+					InvalidateRect(global.hwnd, &global.sector, false);
+				}
+				else
+				{
+					invalidateLoc(oldloc);
+					invalidateLoc(loc);
+				}
+			}
+		}
+		else
+		{
+			assert(loc < MAPSIZE);
+			text.curs(rowcol(loc - secbas) + Smin);
+		}
 	}
-    }
 
 
-    /*********************************
-     * Remove any sticky messages.
-     */
+	/*********************************
+	 * Remove any sticky messages.
+	 */
 
-    void remove_sticky()
-    {
-	Text *t = &text;
+	void remove_sticky()
+	{
+		Text* t = &text;
 
-	if (t.watch)
-	{   t.curs(text.DS(1)); t.deleol();
-	    t.curs(text.DS(2)); t.deleol();
-	    t.curs(text.DS(3)); t.deleol();
+		if (t.watch)
+		{
+			t.curs(text.DS(1)); t.deleol();
+			t.curs(text.DS(2)); t.deleol();
+			t.curs(text.DS(3)); t.deleol();
+		}
 	}
-    }
 
-    /****************************
-     * Print out list of valid commands per mode.
-     */
+	/****************************
+	 * Print out list of valid commands per mode.
+	 */
 
 	void valcmd(int mode)
 	{
@@ -861,37 +887,39 @@ struct Display
 		];
 		Text* t = &text;
 
-      t.curs(text.DS(3));
-      if (!text.narrow)
-	    t.smes("Valid commands: ");
-      t.smes(valmsg[mode]);
-      t.deleol();
-      sound_error();
-    }
-
-    /************************************
-     */
-
-    void cityProdDemands()
-    {
-	Text *t = &text;
-	t.cmes(t.DS(0),"City production demands: \1");
-    }
-
-    void delay(int n)
-    {   Display *d = this;
-
-	if (d.text.watch)
-	{   d.text.flush();
-	    if (d.timeinterval)
-		sleep(n * d.timeinterval);
+		t.curs(text.DS(3));
+		if (!text.narrow)
+			t.smes("Valid commands: ");
+		t.smes(valmsg[mode]);
+		t.deleol();
+		sound_error();
 	}
-    }
 
-    void wakeup()
-    {
-      text.cmes(text.DS(2),"Wakeup performed.\1\2");
-    }
+	/************************************
+	 */
+
+	void cityProdDemands()
+	{
+		Text* t = &text;
+		t.cmes(t.DS(0),"City production demands: \1");
+	}
+
+	void delay(int n)
+	{
+		Display* d = this;
+
+		if (d.text.watch)
+		{
+			d.text.flush();
+			if (d.timeinterval)
+				sleep(n * d.timeinterval);
+		}
+	}
+
+	void wakeup()
+	{
+		text.cmes(text.DS(2),"Wakeup performed.\1\2");
+	}
 
 }
 
@@ -899,10 +927,10 @@ struct Display
  * Type data on a city.
  */
 
-void typcit(Player *p,City *c)
+void typcit(Player* p, City* c)
 {
-    Display *d = p.display;
-    Text *t = &d.text;
+	Display* d = p.display;
+	Text* t = &d.text;
 
 	if (t.watch)
 	{
@@ -922,17 +950,17 @@ void typcit(Player *p,City *c)
 
 void savgam()
 {
-    Text *t = &var.player[plynum].display.text;
+	Text* t = &var.player[plynum].display.text;
 
-    t.cmes(t.DS(3),"Saving game...\1");
-    if (var_savgam("empire.dat"))
-    {
-	t.cmes(t.DS(3),"Error writing EMPIRE.DAT\1");
-    }
-    else
-    {
-	t.cmes(t.DS(3),"Game saved.\1");
-    }
+	t.cmes(t.DS(3),"Saving game...\1");
+	if (var_savgam("empire.dat"))
+	{
+		t.cmes(t.DS(3),"Error writing EMPIRE.DAT\1");
+	}
+	else
+	{
+		t.cmes(t.DS(3),"Game saved.\1");
+	}
 }
 
 /******************************
@@ -940,9 +968,10 @@ void savgam()
  */
 
 void lstvar()
-{ int i,j,k,ene;
-  Player *p = Player.get(2);
-  Text *t = &p.display.text;
+{
+	int i,j,k,ene;
+	Player* p = Player.get(2);
+	Text* t = &p.display.text;
 
 	ene = 2;                            // get computer player number
 	p.display.clrsec();                 // clear section of screen
@@ -957,21 +986,23 @@ void lstvar()
 		}
 	}
 
-  t.cmes(0x600,"NUMUNI\t");
-  for (i = 0; i < 8; i++)
-  {	t.decprt(p.numuni[i]);
-	t.output('\t');
-  }
+	t.cmes(0x600,"NUMUNI\t");
+	for (i = 0; i < 8; i++)
+	{
+		t.decprt(p.numuni[i]);
+		t.output('\t');
+	}
 
-  t.cmes(0x700,"NUMPHS\t");
-  for (i = 0; i < 8; i++)
-  {	t.decprt(p.numphs[i]);
-	t.output('\t');
-  }
+	t.cmes(0x700,"NUMPHS\t");
+	for (i = 0; i < 8; i++)
+	{
+		t.decprt(p.numphs[i]);
+		t.output('\t');
+	}
 
-  t.curs(0x800);
-  t.smes("NUMOWN "); t.decprt(p.numown);
-  t.smes(" NUMTAR "); t.decprt(p.numtar);
+	t.curs(0x800);
+	t.smes("NUMOWN "); t.decprt(p.numown);
+	t.smes(" NUMTAR "); t.decprt(p.numtar);
 
 	t.imes("\n\rTROOPT\n\r");
 	for (i = 0; i < 6; i++)
@@ -984,11 +1015,11 @@ void lstvar()
 		t.crlf();
 	}
 
-  t.imes("LOCI\n\r");
-  for (i = 0; i < LOCMAX; i++)
-  {	t.locprt( p.loci[i] );
-	t.output('\t');
-  }
-  t.crlf();
+	t.imes("LOCI\n\r");
+	for (i = 0; i < LOCMAX; i++)
+	{
+		t.locprt( p.loci[i] );
+		t.output('\t');
+	}
+	t.crlf();
 }
-
