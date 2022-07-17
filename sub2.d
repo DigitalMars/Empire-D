@@ -22,24 +22,26 @@ import std.string;
 
 import empire;
 import var;
+import maps;
 
 /*********************************
  * Return city number given city location.
  */
 
-City *fndcit(loc_t loc)
+City* fndcit(loc_t loc)
 in
 {
-    assert(chkloc(loc));
+	assert(chkloc(loc));
 }
 body
-{ int i;
+{
+	int i;
 
-  for (i = CITMAX; i--;)
-	if (city[i].loc == loc)
-	    return &city[i];		// we found the city
-  assert(0);
-  return null;
+	for (i = CITMAX; i--;)
+		if (city[i].loc == loc)
+			return &city[i];		// we found the city
+	assert(0);
+	return null;
 }
 
 
@@ -52,16 +54,17 @@ body
  *	false	if overpopulation
  */
 
-int newuni(Unit **pu,loc_t loc,uint ty,uint pn)
+int newuni(out Unit* pu, loc_t loc, uint ty, uint pn)
 in
 {
-    assert(chkloc(loc));
-    assert(ty < TYPMAX);
-    assert(pn <= PLYMAX);
+	assert(chkloc(loc));
+	assert(ty < TYPMAX);
+	assert(pn <= PLYMAX);
 }
 body
-{ int i;
-  Unit *u;
+{
+	int i;
+	Unit* u;
 
 	/+for (i = 0; i < UNIMAX; i++)
 	{
