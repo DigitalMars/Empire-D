@@ -114,8 +114,6 @@ void flip()
 		map[i] = c;
 	}
 }
-
-
 /************************
  * Flip map end to end.
  */

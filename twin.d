@@ -21,9 +21,9 @@
 	            (c) Charles Petzold, 1992
   -----------------------------------------------------*/
 
-import std.c.windows.windows;
-import std.c.stdio;
-import std.c.stdlib;
+import core.sys.windows.windows;
+import core.stdc.stdio;
+import core.stdc.stdlib;
 import std.file;
 import std.path;
 import std.string;
@@ -86,7 +86,7 @@ extern(Windows) LRESULT TextWndProc (HWND hwnd, UINT message, WPARAM wParam,
 {
 	static int  cxChar, cxCaps, cyChar, cxClient, cyClient, nMaxWidth,
 	               nVscrollPos, nVscrollMax, nHscrollPos, nHscrollMax;
-	char          szBuffer[10];
+    char[10]          szBuffer ;
 	HDC           hdc;
 	int         x, y, nPaintBeg, nPaintEnd, nVscrollInc, nHscrollInc;
 	PAINTSTRUCT   ps;

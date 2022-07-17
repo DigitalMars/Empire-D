@@ -26,7 +26,7 @@ import sub2;
 import std.string;
 version (Windows) {
 	import winmain, newdisplay;
-	debug (tslice) import std.c.windows.windows;
+	debug (tslice) import core.sys.windows.windows;
 } else {
 	import display;
 }
@@ -109,7 +109,7 @@ struct Player
 			  "Debug", MB_OKCANCEL) == IDCANCEL) debugSlices = false;
 		}
 	}
-	body {
+	do {
 		int i;
 		Unit* u;
 		Player* p = this;
@@ -564,7 +564,7 @@ struct Player
 	 * for him also.
 	 */
 
-	static int dirtab[9] = [3,2,1,4,-1,0,5,6,7];  // to minimize chars
+	static int[9] dirtab = [3,2,1,4,-1,0,5,6,7];  // to minimize chars
 	                                              // sent to screen
 	void sensor(loc_t loc)
 	{
@@ -3030,7 +3030,7 @@ struct Player
 	void SHIPco(Unit* u, dir_t* pr2)
 	{
 		int msknum;
-		static int attmsk[6] =
+		static int[6] attmsk =
 		[
 			mF|mD|mT|mS,                   // D:.FDT S...
 			0,                             // T:.... ....
@@ -3039,7 +3039,7 @@ struct Player
 			mD|mT|mC,                      // C:..DT ..C.
 			mF|mD|mT|mS|mR|mC|mB           // B:.FDT SRCB
 		];
-		static int escmsk[6] =
+		static int[6] escmsk =
 		[
 			mA|mR|mC|mB,                   // D:A... .RCB
 			mA|mF|mD|mS|mR|mC|mB,          // T:AFD. SRCB
@@ -3278,7 +3278,7 @@ struct Player
 	{
 		uint loc, tloc, min, dt, i, j, mask;
 		//Player* p = this;
-		static uint nshprf[6] =         // which rows to look at
+		static uint[6] nshprf =         // which rows to look at
 		[
 			mD|mT|mS,                   // D: DT S...
 			mT,                         // T: .T ....
@@ -3962,7 +3962,7 @@ struct Player
 			int i;
 			int co40;
 			char* s;
-			char buf[r.sizeof * 3 + 1];
+			char[r.sizeof * 3 + 1] buf;
 			Text* t = &display.text;
 
 			if (!watch)
@@ -4271,8 +4271,8 @@ struct Player
 
 	bool cmdcur(loc_t* ploc, uint cmd, dir_t* pr2)
 	{
-		static int dirtab[]  = ['D','E','W','Q','A','Z','X','C'];
-		static int dirtab2[] = [77*256, 73*256, 72*256, 71*256,  // scan codes
+		static int[] dirtab  = ['D','E','W','Q','A','Z','X','C'];
+		static int[] dirtab2 = [77*256, 73*256, 72*256, 71*256,  // scan codes
 							    75*256, 79*256, 80*256, 81*256];
 		//Player* p = this;
 		/+version (Windows) {

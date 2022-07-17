@@ -15,8 +15,8 @@
  * Use entirely at your own risk. There is no warranty, expressed or implied.
  */
 
-import std.c.windows.windows;
-import std.c.time;
+import core.sys.windows.windows;
+import core.stdc.time;
 import std.string;
 
 import empire;
@@ -445,7 +445,7 @@ class NewDisplay {
 
 	void fncprt(Unit* u)
 	{
-		static char dtab[9] = "DEWQAZXC";		// directions
+		static char[9] dtab = "DEWQAZXC";		// directions
 		Player* p = Player.get(u.own);
 
 		if (p.human)						// if human player

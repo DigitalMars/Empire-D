@@ -54,8 +54,8 @@ int slice()
 			break;
 
 		case 3: {
-			static int e1[4] = [0,2,1,1];	// 0th element is a dummy
-			static int e2[4] = [0,3,3,2];
+			static int[4] e1 = [0,2,1,1];	// 0th element is a dummy
+			static int[4] e2 = [0,3,3,2];
 
 			// Only allow move if we're not HYSTERESIS moves ahead of the others.
 

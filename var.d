@@ -18,7 +18,7 @@
 
 module var;
 
-import std.c.stdio;
+import core.stdc.stdio;
 
 import empire;
 import eplayer;
@@ -29,7 +29,7 @@ import eplayer;
 
 uint noflush = 0;						// if non-zero then don't flush
 
-Type typx[TYPMAX] =
+Type[TYPMAX] typx =
 [
 	{  5, 6,'A', 0 },
 	{ 10,12,'F',20 },
@@ -70,7 +70,7 @@ int arrow(dir_t dir)
 	}
     do
 	{
-		static int arrow[9] =
+	static int[9] arrow =
 			[0,1,-Mcolmx,-Mcolmx-1,-Mcolmx-2,-1,Mcolmx,Mcolmx+1,Mcolmx+2];
 
 		return arrow[dir + 1];

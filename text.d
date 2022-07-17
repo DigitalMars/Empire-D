@@ -18,8 +18,8 @@
 
 module text;
 
-import std.c.stdio;
-import std.ctype;
+import core.stdc.stdio;
+import core.stdc.ctype;
 
 import empire;
 import printf;
@@ -326,7 +326,7 @@ deprecated struct Text
 
 	void vsmes(char* format,...)
 	{
-		char buffer[100];
+		char[100] buffer;
 		int count;
 
 		count = _vsnprintf(buffer,buffer.sizeof,format,cast(va_list)(&format + 1));

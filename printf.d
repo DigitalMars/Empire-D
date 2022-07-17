@@ -25,22 +25,22 @@
 // TODO: what's this for?
 // TODO: consider converting to D-style
 
-import std.c.stdio;
-import std.c.stdlib;
-import std.c.string;
+import core.stdc.stdio;
+import core.stdc.stdlib;
+import core.stdc.string;
 import std.string;
 import std.file;
-import std.stdarg;
+import core.stdc.stdarg;
 
 const int LOG = 1;				// disable logging by setting this to 0
 
 version (Windows)
 {
-	char logfile[] = r"\empire.log";
+    char[] logfile = r"\empire.log";
 }
 version (linux)
 {
-	char logfile[] = "/var/log/empire.log";
+    char[] logfile = "/var/log/empire.log";
 }
 
 /*********************************************
@@ -89,7 +89,7 @@ extern (C)
 	{
 		if (printf_logging != Plog.TOBITBUCKET)
 		{
-			char buffer[128];
+			char[128] buffer;
 			char* p;
 			uint psize;
 			int count;

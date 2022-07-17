@@ -54,7 +54,7 @@ int aboard(Unit* u)
 
 int tcaf(Unit* u)
 {	                    //    A  F  D  T  S  R  C  B
-	static int tcaftab[8] = [-1,-1,-1, A,-1,-1, F,-1];
+    static int[8] tcaftab = [-1,-1,-1, A,-1,-1, F,-1];
 
 	return tcaftab[u.typ];
 }
@@ -86,7 +86,7 @@ int dist(loc_t loc1,loc_t loc2)
 
 int movdir(loc_t loc1,loc_t loc2)
 {
-	static int mov[] = [3,4,5,2,-1,6,1,0,7];
+	static int[] mov = [3,4,5,2,-1,6,1,0,7];
 	int i = 0;
 	int r1,c1,r2,c2;
 

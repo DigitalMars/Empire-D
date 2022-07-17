@@ -2,6 +2,7 @@
  * Empire, the Wargame of the Century (tm)
  * Copyright (C) 1978-2004 by Walter Bright
  * All Rights Reserved
+ * www.classicempire.com
  *
  * You may use this source for personal use only. To use it commercially
  * or to distribute source or binaries of Empire, please contact
@@ -16,9 +17,9 @@
  */
 
 module winmain;
-import std.c.stdlib;
-import std.c.stdio;
-import std.c.windows.windows;
+import core.stdc.stdlib;
+import core.stdc.stdio;
+import core.sys.windows.windows;
 import std.math;
 import std.string;
 
@@ -1618,7 +1619,7 @@ void invalidateLoc(loc_t loc)
 in {
 	assert (loc < MAPSIZE);
 }
-body {
+do {
 	RECT rect;
 	int r, c;
 	int dx;

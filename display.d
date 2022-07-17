@@ -16,8 +16,8 @@
  */
 
 
-import std.c.stdlib;
-import std.c.time;
+import core.stdc.stdlib;
+import core.stdc.time;
 
 import empire;
 import eplayer;
@@ -713,7 +713,7 @@ deprecated struct Display
 
 	void fncprt(Unit* u)
 	{
-		static char dtab[9] = "DEWQAZXC";		// directions
+		static char[9] dtab = "DEWQAZXC";		// directions
 		Player* p = Player.get(u.own);
 		Text* t = &text;
 
@@ -876,7 +876,7 @@ deprecated struct Display
 
 	void valcmd(int mode)
 	{
-		static char* valmsg[] =
+		static char*[] valmsg =
 		[
 			"valcmd()",                       // just a place holder
 			"QWEADZXC,FGHIKLNRSUVY<>,space",  // Move
