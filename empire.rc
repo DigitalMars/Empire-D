@@ -106,7 +106,7 @@ AboutBox DIALOG 20, 20, 160, 110
 STYLE 0x2004L | WS_POPUP | WS_DLGFRAME
 FONT 8, "MS Sans Serif"
 {
- CTEXT "Empire 2.01", -1, 0, 12, 160, 8
+ CTEXT "Empire 2.04", -1, 0, 12, 160, 8
  ICON "About", -1, 8, 8, 0, 0
  CTEXT "Wargame of the Century", -1, 0, 20, 160, 8
  CTEXT "(c) Walter Bright 1978-2004", -1, 0, 32, 160, 8
