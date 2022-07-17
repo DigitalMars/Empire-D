@@ -8,6 +8,7 @@
  * www.digitalmars.com.
  *
  * Written by Walter Bright.
+ * Modified by Stewart Gordon.
  * This source is written in the D Programming Language.
  * See www.digitalmars.com/d/ for the D specification and compiler.
  *
@@ -43,7 +44,7 @@ body
 
 
 /*******************************
- * Create a new unit, given it's loc and type.
+ * Create a new unit, given its loc and type.
  * Output:
  *	unitop = max(unitop, uninum + 1)
  * Returns:

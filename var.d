@@ -8,6 +8,7 @@
  * www.digitalmars.com.
  *
  * Written by Walter Bright.
+ * Modified by Stewart Gordon.
  * This source is written in the D Programming Language.
  * See www.digitalmars.com/d/ for the D specification and compiler.
  *
@@ -26,7 +27,7 @@ import eplayer;
  * Variables not saved across game saves.
  */
 
-uint noflush = 0;			/* if non-zero then don't flush	*/
+uint noflush = 0;						// if non-zero then don't flush
 
 Type typx[TYPMAX] =
 [
@@ -52,8 +53,8 @@ int sea [MAPMAX] = [0,0,1,0,0,0,0,1,1,1,1,1,1,1,	// etc.
 int land[MAPMAX] = [0,0,0,1,0,1,1,0,0,0,0,0,0,0,	// etc.
 			    0,1,1,0,0,0,0,0,0,0];
 
-/* Mask table. Index is type (A..B).	*/
-ubyte msk[8] =	[mA,mF,mD,mT,mS,mR,mC,mB];
+// Mask table. Index is type (A..B).
+ubyte[8] msk      = [mA,mF,mD,mT,mS,mR,mC,mB];
 
 /* direction table, index is -1..7
  *
@@ -75,16 +76,15 @@ int arrow(dir_t dir)
 	return arrow[dir + 1];
     }
 
-int mapgen = false;		/* true if we're running MAPGEN.EXE	*/
-int savegame = false;		/* set to true if we're to save the game */
+int mapgen = false;             // true if we're running MAPGEN.EXE
+int savegame = false;           // set to true if we're to save the game
 
 /*************************************
  * Variables saved across game saves.
  * All variables must be initialized, so they are in the same segment.
  */
 
-ubyte savbeg = 0;		/* start of variable save area		*/
-
+ubyte savbeg = 0;				// start of variable save area
 
 /*
  * Map variables
@@ -94,36 +94,36 @@ ubyte map[MAPSIZE] = [0,];	// reference map
 int empver = VERSION;		// version number
 //static int mapbas = 0;	// not used
 
-uint seedhi=0,seedlo=0;	/* seeds for random()			*/
-int overpop = false;		/* true means unit arrays are full	*/
-int tamper = false;		/* true means prog has been tampered with */
+uint seedhi=0,seedlo=0; // seeds for random()
+int overpop = false;    // true means unit arrays are full
+int tamper = false;     // true means prog has been tampered with
 
 /*
  * City variables.
  */
 
-uint cittop = 0;		/* actual number of cities		*/
-City city[CITMAX];
+uint cittop = 0;				// actual number of cities
+City[CITMAX] city;
 
 /*
  * Unit variables.
  */
 
-uint unitop = 0;		/* unitop >= topmost unit number	*/
-Unit unit[UNIMAX];
+uint unitop = 0;				// unitop >= topmost unit number
+Unit[UNIMAX] unit;
 
 /*
  * Player variables.
  */
 
-int	numply = 0,		/* default number of players playing	*/
-	plynum = 0,		/* which player is playing, 1..numply	*/
-	concede = false,	/* set to true if computer concedes game */
-	numleft = 0;		/* number of players left in the game	*/
+int	numply = 0,	  // default number of players playing
+	plynum = 0,	  // which player is playing, 1..numply
+	concede = false, // set to true if computer concedes game
+	numleft = 0;	 // number of players left in the game
 
 Player player[PLYMAX + 1];
 
-ubyte savend = 0;		/* so we can find end of variable space	*/
+ubyte savend = 0;	// so we can find end of variable space
 
 /*************************************
  * Initialize variables.

@@ -8,6 +8,7 @@
  * www.digitalmars.com.
  *
  * Written by Walter Bright.
+ * Modified by Stewart Gordon.
  * This source is written in the D Programming Language.
  * See www.digitalmars.com/d/ for the D specification and compiler.
  *
@@ -667,51 +668,51 @@ struct Display
 	Player *p = Player.get(u.own);
 	Text *t = &text;
 
-	if (!t.watch)			// if not watching this guy
-	    return;
-	if (p.human)			// if human player
-	{
-	    if (u.ifo != fnAW)
-		t.smes("Function: ");
-	    switch (u.ifo)
-	    {
-		    case fnAW:
-			//t.smes("None");
-			break;
-		    case fnSE:
-			t.smes("Sentry");
-			break;
-		    case fnRA:
-			t.smes("Random");
-			break;
-		    case fnMO:
-			t.smes("Move To ");
-			t.locprt(u.ila);
-			break;
-		    case fnDI:
-			t.smes("Direction = ");
-			t.output(dtab[u.ila]);
-			break;
-		    case fnFI:
-			t.smes("Load ");
-			if (u.typ == T)
-			    t.smes("Armies");
-			else
-			    t.smes("Fighters");
-			break;
-		    default:
-			assert(0);
-	      }
-
-      }
-      else					/* else computer		*/
-      {   t.smes("IFO: ");
-	    t.decprt(u.ifo);
-	    t.smes(" ILA: ");
-	    t.locdot(u.ila);
-      }
-      t.deleol();
-    }
+		if (!t.watch)						// if not watching this guy
+			return;
+		if (p.human)						// if human player
+		{
+			if (u.ifo != fnAW)
+				t.smes("Function: ");
+			switch (u.ifo)
+			{
+				case fnAW:
+					//t.smes("None");
+					break;
+				case fnSE:
+					t.smes("Sentry");
+					break;
+				case fnRA:
+					t.smes("Random");
+					break;
+				case fnMO:
+					t.smes("Move To ");
+					t.locprt(u.ila);
+					break;
+				case fnDI:
+					t.smes("Direction = ");
+					t.output(dtab[u.ila]);
+					break;
+				case fnFI:
+					t.smes("Load ");
+					if (u.typ == T)
+						t.smes("Armies");
+					else
+						t.smes("Fighters");
+					break;
+				default:
+					assert(0);
+			  }
+		}
+		else		// else computer
+		{
+			t.smes("IFO: ");
+			t.decprt(u.ifo);
+			t.smes(" ILA: ");
+			t.locdot(u.ila);
+		}
+		t.deleol();
+	}
 
     /************************************
      */
@@ -823,16 +824,18 @@ struct Display
      * Print out list of valid commands per mode.
      */
 
-    void valcmd(int mode)
-    {   static char *valmsg[] =
-	[   "valcmd()",			// just a place holder
-	    "QWEADZXC,FGHIKLNRSUVY<>,space", // Move
-	    "QWEADZXC,FGHIKLNPRSU<>,esc",	// Survey
-	    "QWEADZXC,esc",			// Dir
-	    "QWEADZXC,HKNT<>,esc",		// From To
-	    "AFDTSRCB"			// City Prod
-	];
-      Text *t = &text;
+	void valcmd(int mode)
+	{
+		static char* valmsg[] =
+		[
+			"valcmd()",                       // just a place holder
+			"QWEADZXC,FGHIKLNRSUVY<>,space",  // Move
+			"QWEADZXC,FGHIKLNPRSU<>,esc",     // Survey
+			"QWEADZXC,esc",                   // Dir
+			"QWEADZXC,HKNT<>,esc",            // From To
+			"AFDTSRCB"                        // City Prod
+		];
+		Text* t = &text;
 
       t.curs(text.DS(3));
       if (!text.narrow)
@@ -917,16 +920,18 @@ void lstvar()
   Player *p = Player.get(2);
   Text *t = &p.display.text;
 
-  ene = 2;				/* get computer player number	*/
-  p.display.clrsec();			// clear section of screen
+	ene = 2;                            // get computer player number
+	p.display.clrsec();                 // clear section of screen
 
-  t.cmes(0x500,"TARGET\t");
-  for (i = 0; i < CITMAX; i++)		/* loop thru cities		*/
-  {	if (p.target[i])		/* if it's a target		*/
-	{   t.locprt(city[i].loc);
-	    t.output('\t');
+	t.cmes(0x500,"TARGET\t");
+	for (i = 0; i < CITMAX; i++)        // loop thru cities
+	{
+		if (p.target[i])                // if it's a target
+		{
+			t.locprt(city[i].loc);
+			t.output('\t');
+		}
 	}
-  }
 
   t.cmes(0x600,"NUMUNI\t");
   for (i = 0; i < 8; i++)
@@ -944,14 +949,16 @@ void lstvar()
   t.smes("NUMOWN "); t.decprt(p.numown);
   t.smes(" NUMTAR "); t.decprt(p.numtar);
 
-  t.imes("\n\rTROOPT\n\r");
-  for (i = 0; i < 6; i++)
-  {	for (k = 0; k < 5; k++)
-	{   t.locprt( p.troopt[i][k] );
-	    t.output('\t');
+	t.imes("\n\rTROOPT\n\r");
+	for (i = 0; i < 6; i++)
+	{
+		for (k = 0; k < 5; k++)
+		{
+			t.locprt( p.troopt[i][k] );
+			t.output('\t');
+		}
+		t.crlf();
 	}
-	t.crlf();
-  }
 
   t.imes("LOCI\n\r");
   for (i = 0; i < LOCMAX; i++)

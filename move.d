@@ -8,6 +8,7 @@
  * www.digitalmars.com.
  *
  * Written by Walter Bright.
+ * Modified by Stewart Gordon.
  * This source is written in the D Programming Language.
  * See www.digitalmars.com/d/ for the D specification and compiler.
  *
@@ -50,24 +51,25 @@ int slice()
 		    ? plynum : newnum;
 	    break;
 
-	case 3:
-	    {   static int e1[4] = [0,2,1,1];	// 0th element is a dummy
-		static int e2[4] = [0,3,3,2];
+		case 3: {
+			static int e1[4] = [0,2,1,1];	// 0th element is a dummy
+			static int e2[4] = [0,3,3,2];
 
 		// Only allow move if we're not HYSTERESIS moves ahead of the others.
 
-		p = Player.get(plynum);
-		if (Player.get(e1[plynum]).round + HYSTERESIS > p.round &&
-		    Player.get(e2[plynum]).round + HYSTERESIS > p.round)
-		    p.tslice();		// move the player
+			p = Player.get(plynum);
+			if (Player.get(e1[plynum]).round + HYSTERESIS > p.round &&
+				  Player.get(e2[plynum]).round + HYSTERESIS > p.round) {
+				p.tslice();		// move the player
+			}
 
 		plynum = (plynum >= 3) ? 1 : plynum + 1;
 	    }
 	    break;
 
-	default:
-	    {	int r;
-		int i;
+		default: {
+			int r;
+			int i;
 
 		p = Player.get(plynum);
 		r = p.round;
@@ -80,10 +82,11 @@ int slice()
 		    if (i == plynum)
 			continue;
 
-		    // Only allow move if we're not HYSTERESIS moves ahead of the others.
-		    if (r >= Player.get(i).round + HYSTERESIS)
-			break;			// too far ahead, next player
-		}
+				// Only allow move if we're not HYSTERESIS moves ahead of the others.
+				if (r >= Player.get(i).round + HYSTERESIS) {
+					break;			// too far ahead, next player
+				}
+			}
 
 		plynum = (plynum >= numply) ? 1 : plynum + 1;
 	    }
@@ -173,9 +176,8 @@ void chkwin()
 	    }
 	done(0);
 
-    L1:
-	;
-  }
+		L1: {}
+	}
 }
 
 
@@ -232,9 +234,10 @@ Unit *fnduni(loc_t loc)
   chkloc(loc);
   assert(.typ[ab] >= 0);
 
-  n = unitop;				/* max unit # + 1		*/
-  while (n--)
-  {	Unit *u = &unit[n];
+	n = unitop;  // max unit # + 1
+	while (n--)
+	{
+		Unit* u = &unit[n];
 
 	if (u.loc == loc && .typ[ab] == u.typ)
 	    return u;
@@ -261,8 +264,8 @@ void kill(Unit *u)
   if (ty == -1)				// if not T or C
 	return;
 
-  if (.typ[.map[loc]] == X)		// if in a city
-	return;				// assume A's & Fs are off ship
+	if (.typ[.map[loc]] == X)            // if in a city
+		return;                          // assume As & Fs are off ship
 
   ndes = 0;
   for (i = unitop; i--;)
@@ -334,15 +337,16 @@ int fndtar(Unit *u,uint *p,uint n)
 int sursea(Unit *u)
 { int loc,ac,i;
 
-  loc = u.loc;
-  if ((u.typ != A) || (typ[.map[loc]] != T))
-	return(false);
-  for (i = 8; i--;)
-  {	ac = .map[loc + arrow(i)];	/* ltr map value		*/
-	if ((land[ac] || typ[ac] == X) && own[ac] != u.own)
-	    return(false);		/* found land or unowned city	*/
-  }
-  return(true);				/* guess it must be so		*/
+	loc = u.loc;
+	if ((u.typ != A) || (typ[.map[loc]] != T))
+		return false;
+	for (i = 8; i--;)
+	{
+		ac = .map[loc + arrow(i)];  // ltr map value
+		if ((land[ac] || typ[ac] == X) && own[ac] != u.own)
+			return false;           // found land or unowned city
+	}
+	return true;                    // guess it must be so
 }
 
 

@@ -8,6 +8,7 @@
  * www.digitalmars.com.
  *
  * Written by Walter Bright.
+ * Modified by Stewart Gordon.
  * This source is written in the D Programming Language.
  * See www.digitalmars.com/d/ for the D specification and compiler.
  *
@@ -129,14 +130,15 @@ int rowcol(loc_t loc)
  */
 
 int edger(loc_t loc)
-{ int sum = 0;				/* running total		*/
-  int i = 8;				/* # of directions		*/
+{
+	int sum = 0;  // running total
+	int i = 8;    // # of directions
 
   assert(chkloc(loc));
 
-  while (i--)				/* continue till i = -1		*/
-    if (sea[map[loc + arrow(i)]]) sum++;
-  return sum;
+	while (i--)   // continue till i = -1
+		if (sea[map[loc + arrow(i)]]) sum++;
+	return sum;
 }
 
 /*********************
@@ -158,8 +160,7 @@ void chkmov(dir_t r2,int errnum)
 }
 
 
-/* Miscellaneous
- */
+// Miscellaneous
 
 int max(int a, int b)
 {

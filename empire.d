@@ -8,6 +8,7 @@
  * www.digitalmars.com.
  *
  * Written by Walter Bright.
+ * Modified by Stewart Gordon.
  * This source is written in the D Programming Language.
  * See www.digitalmars.com/d/ for the D specification and compiler.
  *
@@ -27,8 +28,7 @@ uint ranq() { return std.random.rand(); }
 
 const int ERRTERM	= 1;
 
-/* Definitions for typ[MAPMAX] array (X=city, J=not unit or city)
- */
+// Definitions for typ[MAPMAX] array (X=city, J=not unit or city)
 enum
 {
     J = -1,
@@ -75,7 +75,7 @@ else
 }
 
 
-/* Some ascii characters						*/
+// Some ascii characters
 enum
 {
     BEL	= 7,
@@ -89,7 +89,7 @@ enum
     DEL	= 127,
 }
 
-/* map row and column limits (0..Mrowmx,0..Mcolmx)			*/
+// map row and column limits (0..Mrowmx,0..Mcolmx)
 const uint Mrowmx	= 59;
 const int Mcolmx	= 99;
 const int MAPSIZE	= ((Mrowmx + 1) * (Mcolmx + 1));
@@ -106,8 +106,7 @@ enum
     MTterm	= 3,	// For terminals.
 }
 
-/* Some display attributes (for watch[])
- */
+// Some display attributes (for watch[])
 enum
 {
     DAnone	= 0,	// not watching this guy
@@ -124,10 +123,10 @@ enum
 
 enum
 {
-    MAPunknown	= 0,	// ' '
-    MAPcity	= 1,	// '*'
-    MAPsea	= 2,	// '.'
-    MAPland	= 3,	// '+'
+    MAPunknown	= 0, // ' '
+    MAPcity     = 1, // '*'
+    MAPsea      = 2, // '.'
+    MAPland     = 3  // '+'
 }
 
 struct City
@@ -142,10 +141,9 @@ struct City
 
     // Computer strategy
     uint round;		// turn it was captured
-};
+}
 
-/* Ifo functions (same as in hmove.c):
- */
+// Ifo functions (same as in hmove.c):
 
 enum
 {
@@ -198,17 +196,17 @@ struct Unit
     uint abd;		// T,C: number of As (Fs) aboard (0 if not T (C))
     int dir;		// direction (1 or -1)
     int fuel;		// F:range used for strategy selection
-};
+}
 
 // Describes unit type
 struct Type
 {
-    ubyte prodtime;	// production times
-    ubyte phstart;	// starting production times
-    char unichr;	// character representation for city phase purposes
-    int hittab;		// hits left (value for F is fuel, for A is 0
-			// for computer strategy)
-};
+    ubyte prodtime;  // production times
+    ubyte phstart;   // starting production times
+    char unichr;     // character representation for city phase purposes
+    int hittab;      // hits left (value for F is fuel, for A is 0
+                     // for computer strategy)
+}
 
 enum
 {
@@ -222,5 +220,4 @@ enum
 
 
 
-/* #define DS(x)	((x)*256+18) */
-
+// #define DS(x)  ((x)*256+18)

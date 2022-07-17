@@ -8,6 +8,7 @@
  * www.digitalmars.com.
  *
  * Written by Walter Bright.
+ * Modified by Stewart Gordon.
  * This source is written in the D Programming Language.
  * See www.digitalmars.com/d/ for the D specification and compiler.
  *
@@ -39,8 +40,7 @@ void citini()
   //printf("%d cities\n",i);
   assert(i <= CITMAX);
 
-  /* shuffle cities around
-   */
+	// shuffle cities around
 
   for (i = CITMAX / 2; i--;)
   {	j = empire.random(CITMAX);

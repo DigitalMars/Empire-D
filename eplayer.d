@@ -8,6 +8,7 @@
  * www.digitalmars.com.
  *
  * Written by Walter Bright.
+ * Modified by Stewart Gordon.
  * This source is written in the D Programming Language.
  * See www.digitalmars.com/d/ for the D specification and compiler.
  *
@@ -223,9 +224,7 @@ struct Player
 	Display *d = p.display;
 	Text *t = &d.text;
 
-      /*
-       * perform the move
-       */
+		// perform the move
 
       locold = loc;			// remember for drag
       snsflg = 0;			// don't do sensor for enemy
@@ -234,9 +233,7 @@ struct Player
       ac = .map[loc];			// map value of where we are
       u.loc = loc;			// update unit location
 
-      /*
-       * Watch out for an A on a T attempting to attack a ship
-       */
+		// Watch out for an A on a T attempting to attack a ship
 
       if (type == A && sea[ac] &&
 	    .typ[ab] == T && r2 != -1)
@@ -245,96 +242,100 @@ struct Player
 	    return false;
       }
 
-      /*
-       * perform battles as req'd, watch for A on T or F on C
-       */
+		// perform battles as req'd, watch for A on T or F on C
 
-      if (.typ[ac] >= A)				// if ac is a unit
-      {   if (.own[ac] == p.num)		// if we own the piece
-	    {   if (type == A && .typ[ac] == T)
-		{   if (.typ[ab] != T)
-		    {   d.boarding(u);		// if A boarding a transport
-			eomove(u.loc);
-		    }
-		    return false;
-		}
-		if (type == F && .typ[ac] == C)
-		{   if (.typ[ab] != C)
-		    {
-			// if F landing on a carrier
-			u.hit = typx[F].hittab;		// reset range of F
-			d.landing(u);
-			eomove(u.loc);
-		    }
-		    return false;
-		}
-	    }
-	    else
-		snsflg = .own[ac];		// do sensor for enemy
-	    if (fight(u,loc))		// if we fight & lose
-	    {   killit(u);			// remove the carcass
-		return false;		// all done
-	    }
-	    ac = updmap(loc);		// fix up map
-      }
-
-     /*
-      * take care of special stuff for armies
-      */
-
-      if (type == A)			// if army
-      {   if (ac == MAPsea)		// if moving onto sea
-	    {   d.drown(u);		// drown him
-		killit(u);
-	    }
-	    else if (ac == MAPland)		// if moving onto land
-	    {   change(type,loc,ac);	// update map loc
-		eomove(loc);		// do end of move processing
-	    }
-	    else
-	    {
-		assert(.typ[ac] == X);
-		attcit(loc);		// then must be attacking a city
-		killit(u);			// always destroyed
-	    }
-	    return false;			// all done
-      }
-
-      /*
-       * take care of special stuff for fighters
-       */
-
-      if (type == F)			// if fighter
-      {   if (.typ[ac] == X)		// if moving onto a city
-	    {   if (.own[ac] == p.num)	// if the city is ours
+		if (.typ[ac] >= A)                       // if ac is a unit
 		{
-		    // land the plane
-		    u.hit = typx[F].hittab;	// reset range of F
-		    d.landing(u);
-		    eomove(u.loc);
+			if (.own[ac] == num)                 // if we own the piece
+			{
+				if (type == A && .typ[ac] == T)
+				{
+					if (.typ[ab] != T)
+					{
+						d.boarding(u);           // if A boarding a transport
+						eomove(u.loc);
+					}
+					return false;
+				}
+				if (type == F && .typ[ac] == C)
+				{
+					if (.typ[ab] != C)
+					{
+						// if F landing on a carrier
+						u.hit = typx[F].hittab;  // reset range of F
+						d.landing(u);
+						eomove(u.loc);
+					}
+					return false;
+				}
+			}
+			else
+				snsflg = .own[ac];               // do sensor for enemy
+			if (fight(u,loc))                    // if we fight & lose
+			{
+				killit(u);                       // remove the carcass
+				return false;                    // all done
+			}
+			ac = updmap(loc);                    // fix up map
 		}
-		else			// unowned city
-		{
-		    d.shot_down(u);
-		    killit(u);		// a fatal error
-		}
-		return false;
-	    }
-	    else				// moving onto sea or land
-	    {   if (--u.hit)		// if not run out of fuel yet
-		    change(type,loc,ac);	// good move
-		else			// ran out of fuel
-		{
-		    d.no_fuel(u);
-		    killit(u);
-		    return false;
-		}
-	    }
-      }
 
-    /*
-     * take care of ships
-     */
+		// take care of special stuff for armies
+
+		if (type == A)                           // if army
+		{
+			if (ac == MAPsea)                    // if moving onto sea
+			{
+				d.drown(u);                      // drown him
+				killit(u);
+			}
+			else if (ac == MAPland)              // if moving onto land
+			{
+				change(type, loc, ac);           // update map loc
+				eomove(loc);                     // do end of move processing
+			}
+			else
+			{
+				assert(.typ[ac] == X);
+				attcit(loc);                 // then must be attacking a city
+				killit(u);                       // always destroyed
+			}
+			return false;                        // all done
+		}
+
+		// take care of special stuff for fighters
+
+		if (type == F)                           // if fighter
+		{
+			if (.typ[ac] == X)                   // if moving onto a city
+			{
+				if (.own[ac] == num)             // if the city is ours
+				{
+					// land the plane
+					u.hit = typx[F].hittab;      // reset range of F
+					d.landing(u);
+					eomove(u.loc);
+				}
+				else                             // unowned city
+				{
+					d.shot_down(u);
+					killit(u);                   // a fatal error
+				}
+				return false;
+			}
+			else                                 // moving onto sea or land
+			{
+				if (--u.hit)                     // if not run out of fuel yet
+				change(type, loc, ac);           // good move
+				else                             // ran out of fuel
+				{
+					d.no_fuel(u);
+					killit(u);
+					return false;
+				}
+			}
+		}
+
+		// take care of ships
 
       if (type >= D)			// take care of ships
       {   if (ac == MAPsea)		// if moving onto sea
@@ -414,8 +415,7 @@ struct Player
 	    snsflg = c.own;			// !=0 if do sensor for enemy
 	    c.own = patt.num;			// set new owner
 
-	    /* Destroy any enemy pieces in the city.
-	     */
+			// Destroy any enemy pieces in the city.
 
 	    for (i = 0; i < unitop; i++)
 	    {   Unit *u = &unit[i];
@@ -629,14 +629,12 @@ struct Player
       p.setmode(mdMOVE);			// put in move mode
       goto cmdscn;
 
-     /* Bad command
-      */
+		// Bad command
 
     cmderr:
       cmderror();
 
-      /* Command scanner
-       */
+		// Command scanner
 
     cmdscn:
       p.sensor(u.loc);			// bring map up to date
@@ -648,8 +646,7 @@ struct Player
       }
       p.nrdy = 0;				// reset flag
 
-      /* Evaluate result if it's a direction command.
-       */
+		// Evaluate result if it's a direction command.
 
       oldloc = p.curloc;			// remember
       if (cmdcur(&p.curloc,cmd,pr2))	// if direction command
@@ -673,8 +670,7 @@ struct Player
 	    goto cmdscn;
       }
 
-      /* Check for command in our table.
-       */
+		// Check for command in our table.
 
       switch (cmd)
 	{   default:
@@ -845,8 +841,7 @@ struct Player
       if (md == mdTO) goto err;
       cloc = p.curloc;
 
-      /* First find nearest city.
-       */
+		// First find nearest city.
 
       mindist = typx[F].hittab + 1;		// we want one within range
       for (i = CITMAX; i--;)
@@ -859,8 +854,7 @@ struct Player
 	    }
       }
 
-      /* Look for a closer carrier.
-       */
+		// Look for a closer carrier.
 
       for (i = unitop; i--;)
       {   if (unit[i].typ == C &&		// if it's a carrier and
@@ -1226,17 +1220,16 @@ struct Player
     }
 
 
-    /***********************************
-     * Handle human function moves
-     * Input:
-     *	uninum
-     *	*pr2 =	pointer to move variable
-     * Output:
-     *	r2 =	selected move if true
-     * Return:
-     *	true	a move has been selected
-     *	false	caller must pick a move
-     */
+	/***********************************
+	 * Handle human function moves
+	 * Input:
+	 *		u    = unit
+	 * Output:
+	 *		*pr2 = selected move if true
+	 * Return:
+	 *		true   a move has been selected
+	 *		false  caller must pick a move
+	 */
 
     int mycode(Unit *u,dir_t *pr2)
     {   int loc,type,ab,ifo,ila;
@@ -1248,14 +1241,13 @@ struct Player
       ifo = u.ifo;
       ila = u.ila;
 
-      if (eneltr(loc))			// if enemies in ltr
-      {   u.ifo = 0;			// wake up
-	    return(false);			// caller must pick move
-      }
+		if (eneltr(loc))                        // if enemies in ltr
+		{
+			u.ifo = 0;                          // wake up
+			return false;                       // caller must pick move
+		}
 
-      /*
-       * take care of fipaths
-       */
+		// take care of fipaths
 
       if ((type == F) && (typ[ab] == X))	// if fighter in a city
       {   City *c = fndcit(loc);		// find the city
@@ -1266,28 +1258,30 @@ struct Player
 	    }
       }
 
-	if (type == A &&			// if army and
-	  citltr(loc,pr2))			// unowned city in ltr
-		return(false);		// caller must pick move
+		if (type == A &&                        // if army and
+			  citltr(loc, pr2))                 // unowned city in ltr
+			return false;                       // caller must pick move
 
-	switch (ifo)
-	{   case fnAW:
-		return(false);		// caller picks move
+		switch (ifo)
+		{
+		case fnAW:
+			return false;                       // caller picks move
 
-	    case fnSE:
-		*pr2 = -1;			// stay put
-		return(true);
+		case fnSE:
+			*pr2 = -1;                          // stay put
+			return true;
 
-	    case fnRA:
-		if (type == A)		// if army
-		    if (tltr(loc,pr2))	// if a T to get on
-		    {   u.ifo = 0;		// wake up
-			return(true);
-		    }
-		*pr2 = empire.random(8);		// pick a move at random
-		if (around(u,pr2))		// if we got a move
-		    goto di2;
-		return false;		// temporarilly unable to move
+		case fnRA:
+			if (type == A &&                    // if army
+			  tltr(loc, pr2))                   // if a T to get on
+			{
+				u.ifo = 0;                      // wake up
+				return true;
+			}
+			*pr2 = empire.random(8);            // pick a move at random
+			if (around(u, pr2))                 // if we got a move
+				goto di2;
+			return false;                       // temporarily unable to move
 
 	    case fnMO:
 		*pr2 = movdir(loc,ila);	// move from loc to ila
@@ -1336,46 +1330,48 @@ struct Player
     {   int z6,ac,ab,type;
       Player *p = this;
 
-      assert(!(r2 & ~7));
-      z6 = u.loc + arrow(r2);		// see where we're going
-      if (border(z6))			// if on edge
-	    return(false);
-      ac = .map[z6];			// see where we are going
-      if ((typ[ac] >= A) && (own[ac] != p.num))
-	    return(false);			// it's enemy
-      ab = .map[u.loc];			// see where we are
-      type = u.typ;			// what's our unit type?
-      if (type == A)			// if dealing with an A
-      {   Unit *ut;
+		assert(!(r2 & ~7));
+		z6 = u.loc + arrow(r2);                // see where we're going
+		if (border(z6))                        // if on edge
+			return false;
+		ac = .map[z6];                         // see where we are going
+		if ((typ[ac] >= A) && (own[ac] != num))
+			return false;                      // it's enemy
+		ab = .map[u.loc];                      // see where we are
+		type = u.typ;                          // what's our unit type?
+		if (type == A)                         // if dealing with an A
+		{
+			Unit* ut;
 
-	    if (ac == MAPland)		// if '+'
-		return(true);
-	    if ((typ[ab] == T) && sea[ac])	// can't move from T onto sea
-		return(false);
-	    if (typ[ac] != T)		// if it's not an owned T
-		return(false);
-	    ut = fnduni(z6);
-	    if (!p.human &&
-		u.hit < typx[T].hittab &&
-		u.ifo == IFOdamaged)
-		return false;		// don't get on damaged T
+			if (ac == MAPland)                 // if '+'
+				return true;
+			if ((typ[ab] == T) && sea[ac])     // can't move from T onto sea
+				return false;
+			if (typ[ac] != T)                  // if it's not an owned T
+				return false;
+			ut = fnduni(z6);
+			if (!human &&
+				  u.hit < typx[T].hittab &&
+				  u.ifo == IFOdamaged)
+				return false;                  // don't get on damaged T
 
-	    return !full(ut);		// can't get on it it's full
-      }
-      if (ac == MAPsea)			// if '.'
-	    return(true);
-      if (typ[ac] == X && own[ac] == p.num) // if owned city
-      {   if (u.ifo == IFOloadarmy)	// if computer strategy
-		return(false);
-	    if (aboard(u))			// if T (C) with As (Fs) aboard
-		return(false);
-	    return(true);			// can move into city
-      }
-      if (type == F &&
-	    (ac == MAPland || (typ[ac] == C && !full(fnduni(z6)) )) )
-	    return true;
-      return false;
-    }
+			return !full(ut);                  // can't get on it it's full
+		}
+		if (ac == MAPsea)                      // if '.'
+			return true;
+		if (typ[ac] == X && own[ac] == num)  // if owned city
+		{
+			if (u.ifo == IFOloadarmy)          // if computer strategy
+				return false;
+			if (aboard(u))                     // if T (C) with As (Fs) aboard
+				return false;
+			return true;                       // can move into city
+		}
+		if (type == F &&
+			  (ac == MAPland || (typ[ac] == C && !full(fnduni(z6)))))
+			return true;
+		return false;
+	}
 
 
     /**************************************
@@ -1472,14 +1468,15 @@ struct Player
     int eneltr(loc_t loc)
     {   int r2,ab;
 
-	assert(chkloc(loc));
-	for (r2 = 8; r2--;)
-	{   ab = .map[loc + arrow(r2)];
-	    if (typ[ab] >= A && own[ab] != num)
-		return(true);
+		assert(chkloc(loc));
+		for (r2 = 8; r2--;)
+		{
+			ab = .map[loc + arrow(r2)];
+			if (typ[ab] >= A && own[ab] != num)
+				return true;
+		}
+		return false;
 	}
-	return false;
-    }
 
 
     /*********************************
@@ -1571,15 +1568,17 @@ struct Player
       if (ifoeva(u))			// see if we need a new ifo
 	    newifo(u);			// select a new ifo
 
-      *pr2 = movsel(u);			// select a trial move
-    {   dir_t oldr2 = *pr2;
-      movcor(u,pr2);			// return corrected move
-    //if (p.watch && u.typ == A && u.ifo == IFOfolshore)
-    //printf("\nu=%p, ifo=%d, ila=%3d, r2=%2d, oldr2=%d, dir=%2d\n",u,u.ifo,u.ila,*pr2,oldr2,u.dir),sleep(1);
-    }
-    }
-      return 1;				// move is done
-    }
+			*pr2 = movsel(u);       // select a trial move
+			{
+				dir_t oldr2 = *pr2;
+				movcor(u, pr2);     // return corrected move
+				//if (p.watch && u.typ == A && u.ifo == IFOfolshore)
+				/+printf("\nu=%p, ifo=%d, ila=%3d, r2=%2d, oldr2=%d, dir=%2d\n",
+				  u,u.ifo,u.ila,*pr2,oldr2,u.dir),sleep(1);+/
+			}
+		}
+		return 1;                   // move is done
+	}
 
     /***************************
      * Evaluate IFO to see if we should change it.
@@ -1601,9 +1600,10 @@ struct Player
 	  (u.typ != T || !u.abd))		// not a T with As aboard
 		port(u);			// search for a port
 
-      /*
-       * If it's a T with u.ifo != IFOloadarmy and no armies aboard, clear u.ifo.
-       */
+		/*
+		 *	If it's a T with u.ifo != IFOloadarmy and no armies aboard, clear
+		 *	u.ifo.
+		 */
 
       if (u.typ == T && u.ifo != IFOloadarmy &&
 	  u.abd == 0 && u.ifo != IFOdamaged)
@@ -2102,16 +2102,16 @@ struct Player
     }
 
 
-    /******************************
-     * Given a unit number and direction, look around
-     * for territory to explore, giving priority to
-     * moving diagonally.
-     * Input:
-     *	*r2	where to put direction (watch out for -1!)
-     * Returns:
-     *	true	*r2 = direction to go
-     *	false	*r2 preserved
-     */
+	/******************************
+	 * Given a unit number and direction, look around
+	 * for territory to explore, giving priority to
+	 * moving diagonally.
+	 * Input:
+	 *		*pr2   where to put direction (watch out for -1!)
+	 * Returns:
+	 *		true   *pr2 = direction to go
+	 *		false  *pr2 preserved
+	 */
 
     int explor(Unit *u,dir_t *pr2)
     {   int r,ab,i;
@@ -2426,27 +2426,29 @@ struct Player
       loc_t loc;
       Unit *ui;
 
-      loc = u.loc;
-      assert(chkloc(loc));
-      i = end = empire.random(unitop);		// end at random unit #
-      do
-      {   ui = &unit[i];
-	    if (ui.ifo == IFOloadarmy &&	// must be looking for armies
-	      ui.typ == T &&		// look for a transports
-	      ui.loc &&			// if unit exists
-	      ui.own == num &&		// if we own the unit
-	      dist(loc,ui.loc) <= 10)	// if T is near
-	    {   ui.ila = loc;		// set ila of T to unit loc
-		u.ifo = IFOgotoT;
-		u.ila = i;			// set ila to transport #
-		return true;
-	    }
-	    i++;
-	    if (i >= unitop) i = 0;		// wrap around
-      }
-      while (i != end);
-      return false;
-    }
+		loc = u.loc;
+		assert(chkloc(loc));
+		i = end = empire.random(unitop);  // end at random unit #
+		do
+		{
+			ui = &unit[i];
+			if (ui.ifo == IFOloadarmy &&  // must be looking for armies
+			  ui.typ == T &&              // look for a transport
+			  ui.loc &&                   // if unit exists
+			  ui.own == num &&            // if we own the unit
+			  dist(loc,ui.loc) <= 10)     // if T is near
+			{
+				ui.ila = loc;             // set ila of T to unit loc
+				u.ifo = IFOgotoT;
+				u.ila = i;                // set ila to transport #
+				return true;
+			}
+			i++;
+			if (i >= unitop) i = 0;       // wrap around
+		}
+		while (i != end);
+		return false;
+	}
 
     /************************************
      * Select an ifo and ila for a fighter.
@@ -2745,23 +2747,25 @@ struct Player
       ];
       int m;
 
-      if (lodarm(u,pr2)) return;		// loading armies, stay put
-      if (u.ifo != IFOloadarmy)		// if not looking for armies
-      {   if (*pr2 == -1) return;		// if stay put, then stay put
-	    if (u.ifo != 8 &&		// if ship isn't damaged and
-		explor(u,pr2))		// territory to explore
-		return;
-      }
-      msknum = u.typ - D;			// get index into masks
-      m = attmsk[msknum];
-      if (overpop && u.typ != T)
-	    m = mA|mF|mD|mT|mS|mR|mC|mB;	// attack anything
-      if (eneatt(u,pr2,m))
-	    return;				// if enemies to attack
-      if (eneatt(u,pr2,escmsk[msknum]))	// if anything to escape from
-	    *pr2 = (*pr2 + 3 + empire.random(3)) & 7; // move in opposite direction
-      around(u,pr2);
-    }
+		if (lodarm(u,pr2)) return;         // loading armies, stay put
+		if (u.ifo != IFOloadarmy)          // if not looking for armies
+		{
+			if (*pr2 == -1) return;        // if stay put, then stay put
+			if (u.ifo != 8 &&              // if ship isn't damaged and
+				explor(u,pr2))             // territory to explore
+				return;
+		}
+		msknum = u.typ - D;                // get index into masks
+		m = attmsk[msknum];
+		if (overpop && u.typ != T)
+			m = mA|mF|mD|mT|mS|mR|mC|mB;   // attack anything
+		if (eneatt(u,pr2,m))
+			return;                        // if enemies to attack
+		if (eneatt(u,pr2,escmsk[msknum]))  // if anything to escape from
+			// move in opposite direction
+			*pr2 = (*pr2 + 3 + empire.random(3)) & 7;
+		around(u,pr2);
+	}
 
     /**************************
      * Look for port to go to.
@@ -3163,8 +3167,7 @@ struct Player
 	    if (c.fnd != p.round + typx[iniphs].prodtime - 1)
 		continue;			// if not just produced something
 
-	    /* Evaluate phase and select a new one if necessary.
-	     */
+			// Evaluate phase and select a new one if necessary.
 
 	    if (edge == 8)			// if island city
 	    {   island(c);			// evaluate phase for island city
@@ -3224,18 +3227,19 @@ struct Player
     int nearct(loc_t loc)
     {   int n,j,uloc;
 
-	n = 0;				// count
-	for (j = unitop; j--;)		// loop thru units
-	{   if (unit[j].typ) continue;	// if not an army
-	    if (unit[j].own != num) continue;	// we don't own it
-	    if ((uloc = unit[j].loc) == 0) continue;	// unit doesn't exist
-	    if (dist(loc,uloc) > 6) continue;	// too far away
-	    if (typ[map[uloc]] == T) continue;	// if A is on a T
-	    if (patlnd(uloc,loc))		// if on same continent
-		n++;			// count
+		n = 0;                                        // count
+		for (j = unitop; j--;)                        // loop thru units
+		{
+			if (unit[j].typ) continue;                // if not an army
+			if (unit[j].own != num) continue;         // we don't own it
+			if ((uloc = unit[j].loc) == 0) continue;  // unit doesn't exist
+			if (dist(loc,uloc) > 6) continue;         // too far away
+			if (typ[map[uloc]] == T) continue;        // if A is on a T
+			if (patlnd(uloc, loc))                    // if on same continent
+				n++;
+		}
+		return n;
 	}
-	return n;
-    }
 
 
     /*************************************
@@ -3713,17 +3717,17 @@ struct Player
     }
 
 
-    /*************************************
-     * Perform a battle between attacker and defender.
-     * Input:
-     *	attnum =	unit # of attacker
-     *	loc =		loc of defender
-     * Output:
-     *	unihit[]	updated for winner
-     *	uniloc[]	set to 0 for loser, loc for winner
-     * Return:
-     *	true		if attacker loses
-     */
+	/*************************************
+	 * Perform a battle between attacker and defender.
+	 * Input:
+	 *		attnum   = unit # of attacker
+	 *		loc      = loc of defender
+	 * Output:
+	 *		unihit[] = updated for winner
+	 *		uniloc[] = set to 0 for loser, loc for winner
+	 * Return:
+	 *		true       if attacker loses
+	 */
 
     int fight(Unit *uatt,loc_t loc)
     {   int Hatt,Satt,Hdef,Sdef;		// hits & strike capability
@@ -3797,29 +3801,29 @@ struct Player
     }
 
 
-    /******************************
-     * Given a location and a command, find out if the command
-     * is a direction command. If it is, try to move the cursor
-     * in that direction. If that fails, change sectors so you
-     * can. If that fails, return with location and cursor unchanged.
-     * Input:
-     *	ploc .		location of cursor
-     *	cmd		the command
-     *	pr2 .		where to put the direction
-     * Output:
-     *	if (cmd is valid direction command)
-     *		if (good command)
-     *			*ploc =	new location
-     *			*pr2 = direction
-     *		else
-     *			*ploc,*pr2 preserved
-     *		return true
-     *	else
-     *		*ploc,*pr2 preserved
-     *		return false
-     * Returns:
-     *	true		if valid direction command
-     */
+	/******************************
+	 * Given a location and a command, find out if the command
+	 * is a direction command. If it is, try to move the cursor
+	 * in that direction. If that fails, change sectors so you
+	 * can. If that fails, return with location and cursor unchanged.
+	 * Input:
+	 *		ploc  location of cursor
+	 *		cmd   the command
+	 *		pr2   where to put the direction
+	 * Output:
+	 *		if (cmd is valid direction command)
+	 *				if (good command)
+	 *						*ploc = new location
+	 *						*pr2  = direction
+	 *				else
+	 *						*ploc,*pr2 preserved
+	 *				return true
+	 *		else
+	 *				*ploc,*pr2 preserved
+	 *				return false
+	 * Returns:
+	 *		true				if valid direction command
+	 */
 
     int cmdcur(loc_t *ploc,uint cmd,dir_t *pr2)
     {   static int dirtab[] = ['D','E','W','Q','A','Z','X','C'];

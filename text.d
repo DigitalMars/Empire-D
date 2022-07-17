@@ -53,16 +53,18 @@ struct Text
 	{
 	    int r, c;
 
-	    r = cursor >> 8;
-	    c = cursor & 0xFF;			// get row & column in r,c
-	    for (; c < VBUFCOLS; c++)
-	    {   if (vbuffer[r][c] != ' ')
-		{   anychanges = 1;
-		    vbuffer[r][c] = ' ';
+			r = cursor >> 8;
+			c = cursor & 0xFF;			// get row & column in r,c
+			for (; c < VBUFCOLS; c++)
+			{
+				if (vbuffer[r][c] != ' ')
+				{
+					anychanges = 1;
+					vbuffer[r][c] = ' ';
+				}
+			}
 		}
-	    }
 	}
-    }
 
 
     void deleos()		// erase to end of screen
