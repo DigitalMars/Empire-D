@@ -29,16 +29,23 @@ import var;
 void citini()
 { int loc,i,j,k;
 
-  for (i = CITMAX; i--;)
-  {	memset(&city[i],0,City.sizeof);
-	city[i].loc = city[i].own = 0;
-	city[i].phs = -1;			// no phase
-  }
-  for (i = 0, loc = MAPSIZE; loc--;)
-	if (typ[map[loc]] == X)
-	    city[i++].loc = loc;
-  //printf("%d cities\n",i);
-  assert(i <= CITMAX);
+	/+for (i = CITMAX; i--;)
+	{
+		memset(&city[i],0,City.sizeof);
+		city[i].loc = city[i].own = 0;
+		city[i].phs = -1;						// no phase
+	}+/
+	city[] = City.init;
+	foreach (City c; city) {
+		c.loc = c.own = 0;
+		c.phs = -1;        // no phase
+	}
+
+	for (i = 0, loc = MAPSIZE; loc--;)
+		if (typ[map[loc]] == X)
+			city[i++].loc = loc;
+	//printf("%d cities\n",i);
+	assert(i <= CITMAX);
 
 	// shuffle cities around
 

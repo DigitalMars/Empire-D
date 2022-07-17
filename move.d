@@ -139,12 +139,13 @@ void hrdprd(Player *p)
  */
 
 void chkwin()
-{ int n[PLYMAX+1];			/* # of cities owned by plyr #	*/
-  int i,j;
-  Text *t;
-  Player *p;
+{
+	int[PLYMAX+1] n;               // # of cities owned by plyr #
+	int i, j;
+	//Text* t;
+	Player* p;
 
-  memset(n,0,n.sizeof);
+	//memset(n, 0, n.sizeof);
 
   for (i = CITMAX; i--;)
 	n[city[i].own]++;		// inc number owned

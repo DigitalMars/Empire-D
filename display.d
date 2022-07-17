@@ -134,14 +134,15 @@ struct Display
         return (row * (Mcolmx + 1) + col);	// return adjusted value
     }
 
-    void initialize()
-    {
-	    memset(&text,0,text.sizeof);
-	    text.watch = DAnone;
-	    text.TTtyp = 0;
-	    text.cursor = 0;
-	    text.speaker = 1;
-	    text.Tmax = (23 << 8) + 78;
+	void initialize()
+	{
+		//memset(&text,0,text.sizeof);
+		text = Text.init;
+		text.watch = DAnone;
+		text.TTtyp = 0;
+		text.cursor = 0;
+		text.speaker = 1;
+		text.Tmax = (23 << 8) + 78;
 
 	    text.narrow = 0;
 	    maptab = 0;
