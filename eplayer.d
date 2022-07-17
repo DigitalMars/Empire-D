@@ -83,26 +83,32 @@ struct Player
 	if (!p.human)
 	{   int x;
 
-	    x = p.display.text.TTinr();
-	    switch (x)
-	    {   case 3:
-		    done(1);
-		    break;
-		case 'S':
-		    cwatch();
-		    break;
-		case 'O':
-		    do
-			p = p.nextp();
-		    while (p.human);
-		    exchange_display(p);
-		    return;
-		default:
-		    break;
-	    }
-	}
-	if (numleft == 1)
-	    return;
+			switch (x)
+			{
+			case 3:
+				done(1);
+				break;
+			/++++ this doesn't seem to work - either does nothing or hangs
+			case 'S':
+				cwatch();
+				break;+/
+			case 'O':
+				getKeystroke();
+				do {
+					p = p.nextp();
+				} while (p.human);
+				exchange_display(p);
+				return;
+			default:
+				break;
+			}
+		}
+		debug (tslice) if (debugSlices) {
+			MessageBoxA(global.hwnd,
+			  format("numleft == %d", numleft), "Debug", MB_OK);
+		}
+		if (numleft == 1)
+			return;
 
 	// Loop through all the units making sure that each unit moves
 	// once per round.
