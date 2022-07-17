@@ -30,7 +30,7 @@ extern (C) void sound_click();
 const int VBUFROWS	= 5;
 const int VBUFCOLS	= 80;
 
-char vbuffer[5][80 + 1];
+char[80 + 1][5] vbuffer = [ "\0", "\0", "\0", "\0", "\0" ];
 
 // For each text mode display, which can be either a tty or the
 // PC screen in text mode.
@@ -96,14 +96,12 @@ struct Text
 	{
 	    int r, c;
 
-	    for (r = 0; r < VBUFROWS; r++)
-	    {	for (c = 0; c < VBUFCOLS; c++)
-		    vbuffer[r][c] = ' ';
-		vbuffer[r][VBUFCOLS] = 0;
-	    }
-	    anychanges = 1;
+			for (r = 0; r < VBUFROWS; r++)
+			for (c = 0; c < VBUFCOLS; c++)
+				vbuffer[r][c] = ' ';
+			anychanges = 1;
+		}
 	}
-    }
 
 
 

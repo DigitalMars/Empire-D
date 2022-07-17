@@ -19,6 +19,7 @@ module maps;
 
 import empire;
 import var;
+import std.string;
 
 /***********************************
  * Count how many As (Fs) are aboard a T (C).
@@ -27,19 +28,20 @@ import var;
  *	Returns 0 if unit is in a city.
  */
 
-int aboard(Unit *u)
-{ int loc,type,i,total;
+int aboard(Unit* u)
+{
+	int loc,type,i,total;
 
-  loc = u.loc;
-  if ((type = tcaf(u)) < 0) return 0;	// if not a T or C
-  if (typ[map[loc]] == X) return 0;	// if in a city
-  total = 0;				// number aboard
-  for (i = unitop; i--;)		// loop thru units
+	loc = u.loc;
+	if ((type = tcaf(u)) < 0) return 0;	// if not a T or C
+	if (typ[map[loc]] == X) return 0;	// if in a city
+	total = 0;				// number aboard
+	for (i = unitop; i--;)		// loop thru units
 	if (unit[i].loc == loc &&	// locations match
-	    unit[i].typ == type &&	// if it's the right type
-	    unit[i].own == u.own)
-	    total++;
-  return total;
+		unit[i].typ == type &&	// if it's the right type
+		unit[i].own == u.own)
+		total++;
+	return total;
 }
 
 /**************************************
@@ -50,11 +52,11 @@ int aboard(Unit *u)
  *	-1	else
  */
 
-int tcaf(Unit *u)
-{			//    A  F  D  T  S  R  C  B
-    static int tcaftab[8] = [-1,-1,-1, A,-1,-1, F,-1];
+int tcaf(Unit* u)
+{	                    //    A  F  D  T  S  R  C  B
+	static int tcaftab[8] = [-1,-1,-1, A,-1,-1, F,-1];
 
-    return tcaftab[u.typ];
+	return tcaftab[u.typ];
 }
 
 
@@ -63,17 +65,18 @@ int tcaf(Unit *u)
  */
 
 int dist(loc_t loc1,loc_t loc2)
-{ int r1,c1,r2,c2;
+{
+	int r1,c1,r2,c2;
 
-  assert(chkloc(loc1));
-  assert(chkloc(loc2));
+	assert(chkloc(loc1));
+	assert(chkloc(loc2));
 
-  r1 = ROW(loc1);
-  c1 = COL(loc1);
-  r2 = ROW(loc2);
-  c2 = COL(loc2);
+	r1 = ROW(loc1);
+	c1 = COL(loc1);
+	r2 = ROW(loc2);
+	c2 = COL(loc2);
 
-  return max(abs(r1-r2),abs(c1-c2));
+	return max(abs(r1-r2),abs(c1-c2));
 }
 
 /******************************
@@ -82,26 +85,27 @@ int dist(loc_t loc1,loc_t loc2)
  */
 
 int movdir(loc_t loc1,loc_t loc2)
-{ static int mov[] = [3,4,5,2,-1,6,1,0,7];
-  int i = 0;
-  int r1,c1,r2,c2;
+{
+	static int mov[] = [3,4,5,2,-1,6,1,0,7];
+	int i = 0;
+	int r1,c1,r2,c2;
 
-  assert(chkloc(loc1));
-  assert(chkloc(loc2));
+	assert(chkloc(loc1));
+	assert(chkloc(loc2));
 
-  r1 = ROW(loc1);
-  c1 = COL(loc1);
-  r2 = ROW(loc2);
-  c2 = COL(loc2);
+	r1 = ROW(loc1);
+	c1 = COL(loc1);
+	r2 = ROW(loc2);
+	c2 = COL(loc2);
 
-  if (c2 >  c1) i++;
-  if (c2 >= c1) i++;
-  i *= 3;			/* i=0,3,6 for (3,4,5),(2,-1,6),(1,0,7) */
+	if (c2 >  c1) i++;
+	if (c2 >= c1) i++;
+	i *= 3;			/* i=0,3,6 for (3,4,5),(2,-1,6),(1,0,7) */
 
-  if (r2 >  r1) i++;
-  if (r2 >= r1) i++;
+	if (r2 >  r1) i++;
+	if (r2 >= r1) i++;
 
-  return mov[i];		/* correct direction to move		*/
+	return mov[i];		/* correct direction to move		*/
 }
 
 /****************************
@@ -109,11 +113,12 @@ int movdir(loc_t loc1,loc_t loc2)
  */
 
 int border(loc_t loc)
-{ int r1,c1;
+{
+	int r1,c1;
 
-  r1 = ROW(loc);
-  c1 = COL(loc);
-  return ((r1 == 0) || (r1 == Mrowmx) || (c1 == 0) || (c1 == Mcolmx));
+	r1 = ROW(loc);
+	c1 = COL(loc);
+	return ((r1 == 0) || (r1 == Mrowmx) || (c1 == 0) || (c1 == Mcolmx));
 }
 
 /**********************************
@@ -122,7 +127,7 @@ int border(loc_t loc)
 
 int rowcol(loc_t loc)
 {
-  return (ROW(loc)<<8) + COL(loc);
+	return (ROW(loc)<<8) + COL(loc);
 }
 
 /**************************
@@ -134,7 +139,7 @@ int edger(loc_t loc)
 	int sum = 0;  // running total
 	int i = 8;    // # of directions
 
-  assert(chkloc(loc));
+	assert(chkloc(loc), format("%d,%d", ROW(loc), COL(loc)));
 
 	while (i--)   // continue till i = -1
 		if (sea[map[loc + arrow(i)]]) sum++;
@@ -151,12 +156,12 @@ int edger(loc_t loc)
 
 int chkloc(loc_t loc)
 {
-    return loc < MAPSIZE && !border(loc);
+	return loc < MAPSIZE && !border(loc);
 }
 
-void chkmov(dir_t r2,int errnum)
+void chkmov(dir_t r2, int errnum)
 {
-  assert(r2 >= -1 && r2 <= 7);
+	assert(r2 >= -1 && r2 <= 7);
 }
 
 
@@ -164,12 +169,10 @@ void chkmov(dir_t r2,int errnum)
 
 int max(int a, int b)
 {
-  return (a > b) ? a : b;
+	return (a > b) ? a : b;
 }
 
 int abs(int a)
 {
-  return (a < 0) ? -a : a;
+	return (a < 0) ? -a : a;
 }
-
-
