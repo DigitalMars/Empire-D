@@ -8,11 +8,18 @@
  * www.digitalmars.com.
  *
  * Written by Walter Bright.
+ * Modified by Stewart Gordon.
  *
  * Use entirely at your own risk. There is no warranty, expressed or implied.
  */
 
+/*
+#ifdef WORKSHOP_INVOKED
+#include "e:\borland\bc45\include\windows.h"
+#else
+*/
 #include <windows.h>
+//#endif
 #include "winemp.h"
 
 1 BITMAP unknown.bmp
@@ -95,57 +102,60 @@ BMP_BLASTMASK BITMAP blastmask.bmp
 
 About ICON empire.ico
 
-AboutBox DIALOG  20, 20, 160, 110
-     STYLE WS_POPUP | WS_DLGFRAME
-     {
-     CTEXT "Empire 2.03"                 -1,   0, 12, 160,  8
-     ICON  "About"                       -1,   8,  8,   0,  0
-     CTEXT "Wargame of the Century"      -1,   0, 20, 160,  8
-     CTEXT "(c) Walter Bright 1978-2004" -1,   0, 32, 160,  8
-     CTEXT "All Rights Reserved"	 -1,   0, 40, 160,  8
-     CTEXT "www.classicempire.com"	 -1,   0, 48, 160,  8
-     CTEXT "powered by Digital Mars D"   -1,   0, 64, 160,  8
-     CTEXT "www.digitalmars.com/d/"	 -1,   0, 72, 160,  8
-     DEFPUSHBUTTON "OK"                IDOK,  64, 90,  32, 14, WS_GROUP
-     } 
+AboutBox DIALOG 20, 20, 160, 110
+STYLE 0x2004L | WS_POPUP | WS_DLGFRAME
+FONT 8, "MS Sans Serif"
+{
+ CTEXT "Empire 2.01", -1, 0, 12, 160, 8
+ ICON "About", -1, 8, 8, 0, 0
+ CTEXT "Wargame of the Century", -1, 0, 20, 160, 8
+ CTEXT "(c) Walter Bright 1978-2004", -1, 0, 32, 160, 8
+ CTEXT "All Rights Reserved", -1, 0, 40, 160, 8
+ CTEXT "www.classicempire.com", -1, 0, 48, 160, 8
+ CTEXT "powered by Digital Mars D", -1, 0, 64, 160, 8
+ CTEXT "www.digitalmars.com/d/", -1, 0, 72, 160, 8
+ DEFPUSHBUTTON "OK", IDOK, 64, 90, 32, 14, WS_GROUP
+}
 
 
 #define TABGRP (WS_TABSTOP | WS_GROUP)
 
 CitySelectBox DIALOG 20, 20, 134, 172
-     STYLE WS_POPUP | WS_DLGFRAME
-     {
-     CTEXT       "City Production Demands" -1, 4,  4, 140, 8
-     CTEXT	 ""	IDD_SENSOR	68, 18, 60, 60
-     CTEXT	 ""	IDD_TILE	68, 86, 60, 60
-     GROUPBOX    ""       -1,           4,  14,  58, 112
-     RADIOBUTTON "&Armies"           IDD_ARMIES,     8,  24,  48,  12, TABGRP
-     RADIOBUTTON "&Fighters"         IDD_FIGHTERS,   8,  36,  48,  12
-     RADIOBUTTON "&Destroyers"       IDD_DESTROYERS, 8,  48,  48,  12
-     RADIOBUTTON "&Transports"	     IDD_TRANSPORTS, 8,  60,  48,  12
-     RADIOBUTTON "&Submarines"       IDD_SUBMARINES, 8,  72,  48,  12
-     RADIOBUTTON "C&ruisers"         IDD_CRUISERS,   8,  84,  48,  12
-     RADIOBUTTON "&Carriers"         IDD_CARRIERS,   8,  96,  48,  12
-     RADIOBUTTON "&Battleships"      IDD_BATTLESHIPS,8, 108,  48,  12
-     DEFPUSHBUTTON "OK"         IDOK,        12, 132,  40,  14, WS_GROUP
-     PUSHBUTTON  "Cancel"       IDCANCEL,    12, 152,  40,  14, WS_GROUP
-     }
+STYLE 0x2004L | WS_POPUP | WS_DLGFRAME
+FONT 8, "MS Sans Serif"
+{
+ CTEXT "City Production Demands", -1, 4, 4, 140, 8
+ CTEXT "", IDD_SENSOR, 68, 18, 60, 60
+ CTEXT "", IDD_TILE, 68, 86, 60, 60
+ GROUPBOX "", -1, 4, 14, 58, 112
+ RADIOBUTTON "&Armies", IDD_ARMIES, 8, 24, 48, 12, TABGRP
+ RADIOBUTTON "&Fighters", IDD_FIGHTERS, 8, 36, 48, 12
+ RADIOBUTTON "&Destroyers", IDD_DESTROYERS, 8, 48, 48, 12
+ RADIOBUTTON "&Transports", IDD_TRANSPORTS, 8, 60, 48, 12
+ RADIOBUTTON "&Submarines", IDD_SUBMARINES, 8, 72, 48, 12
+ RADIOBUTTON "C&ruisers", IDD_CRUISERS, 8, 84, 48, 12
+ RADIOBUTTON "&Carriers", IDD_CARRIERS, 8, 96, 48, 12
+ RADIOBUTTON "&Battleships", IDD_BATTLESHIPS, 8, 108, 48, 12
+ DEFPUSHBUTTON "OK", IDOK, 12, 132, 40, 14, WS_GROUP
+ PUSHBUTTON "Cancel", IDCANCEL, 12, 152, 40, 14, WS_GROUP
+}
 
 InitBox DIALOG 20, 20, 68, 116
-     STYLE WS_POPUP | WS_DLGFRAME
-     {
-     CTEXT       "New Game" -1,               4,   4,  58,   8
-     GROUPBOX    "Num Enemies"  -1,           4,  16,  58,  34
-     RADIOBUTTON "&0"           IDD_ONE,      8,  26,  16,  12, TABGRP
-     RADIOBUTTON "&1"           IDD_TWO,      26, 26, 16,  12
-     RADIOBUTTON "&2"           IDD_THREE,    44, 26, 16,  12
-     RADIOBUTTON "&3"           IDD_FOUR,     8,  36, 16,  12
-     RADIOBUTTON "&4"           IDD_FIVE,     26, 36, 16,  12
-     RADIOBUTTON "&5"           IDD_SIX,      44, 36, 16,  12
-     RADIOBUTTON "&Demo"        IDD_DEMO,     20, 58,  48,  12,	WS_GROUP
-     DEFPUSHBUTTON "OK"         IDOK,         14, 76,  40,  14, WS_GROUP
-     PUSHBUTTON  "Cancel"       IDCANCEL,     14, 96,  40,  14, WS_GROUP
-     }
+STYLE 0x2004L | WS_POPUP | WS_DLGFRAME
+FONT 8, "MS Sans Serif"
+{
+ CTEXT "New Game", -1, 4, 4, 58, 8
+ GROUPBOX "Num Enemies", -1, 4, 16, 58, 34
+ //RADIOBUTTON "&0", IDD_ONE, 8, 26, 16, 12, TABGRP
+ RADIOBUTTON "&1", IDD_TWO, 8, 26, 16, 12
+ RADIOBUTTON "&2", IDD_THREE, 26, 26, 16, 12
+ RADIOBUTTON "&3", IDD_FOUR, 44, 26, 16, 12
+ RADIOBUTTON "&4", IDD_FIVE, 8, 36, 16, 12
+ RADIOBUTTON "&5", IDD_SIX, 26, 36, 16, 12
+ CHECKBOX "&Demo", IDD_DEMO, 20, 58, 48, 12, BS_CHECKBOX | NOT WS_TABSTOP | WS_GROUP
+ DEFPUSHBUTTON "OK", IDOK, 14, 76, 40, 14, WS_GROUP
+ PUSHBUTTON "Cancel", IDCANCEL, 14, 96, 40, 14, WS_GROUP
+}
 
 PopMenu MENU
     {
@@ -161,47 +171,49 @@ PopMenu MENU
 	}
     }
 
-Empire MENU
-    {
-    POPUP "&File"
-	{
-	MENUITEM "&New Game...",	IDM_NEW
-	MENUITEM "&Open Game...",	IDM_OPEN
-	MENUITEM "&Save Game...",	IDM_SAVE
-	MENUITEM SEPARATOR
-	MENUITEM "E&xit",		IDM_CLOSE
-	}
+Empire MENU 
+{
+ POPUP "&File"
+ {
+  MENUITEM "&New Game...", IDM_NEW
+  MENUITEM "&Open Game...", IDM_OPEN
+  MENUITEM "&Save Game", IDM_SAVE
+  MENUITEM "Save Game &As...", IDM_SAVE_AS
+  MENUITEM SEPARATOR
+  MENUITEM "E&xit", IDM_CLOSE
+ }
 
-    POPUP "&View"
-	{
-	MENUITEM "+ Zoom in",		IDM_ZOOMIN
-	MENUITEM "- Zoom out",		IDM_ZOOMOUT
-	MENUITEM "N Center screen",	IDM_N
-	MENUITEM "O Change POV",	IDM_POV
-	}
+ POPUP "&View"
+ {
+  MENUITEM "Zoom in\t+", IDM_ZOOMIN
+  MENUITEM "Zoom out\t-", IDM_ZOOMOUT
+  MENUITEM "Center screen\tN", IDM_N
+  MENUITEM "Change POV\tO", IDM_POV
+ }
 
-    POPUP "&Cmd"
-	{
-	MENUITEM "F From To",		IDM_F
-	MENUITEM "G Goto city",		IDM_G
-	MENUITEM "H 20 free moves",	IDM_H
-	MENUITEM "I Direction",		IDM_I
-	MENUITEM "J Sound on/off",	IDM_SOUND
-	MENUITEM "K Wake up",		IDM_K
-	MENUITEM "L Load A/F",		IDM_L
-	MENUITEM "P City production",	IDM_P
-	MENUITEM "R Move randomly",	IDM_R
-	MENUITEM "S Sentry",		IDM_S
-	MENUITEM "U Wake up A/F",	IDM_U
-	MENUITEM "Y Survey",		IDM_Y
-	MENUITEM "Esc Exit mode",	IDM_ESC
-	MENUITEM "< Faster",		IDM_FASTER
-	MENUITEM "> Slower",		IDM_SLOWER
-	}
+ POPUP "&Cmd"
+ {
+  MENUITEM "From To\tF", IDM_F
+  MENUITEM "Goto city\tG", IDM_G
+  MENUITEM "20 free moves\tH", IDM_H
+  MENUITEM "Direction\tI", IDM_I
+  MENUITEM "Sound on/off\tJ", IDM_SOUND
+  MENUITEM "Wake up\tK", IDM_K
+  MENUITEM "Load A/F\tL", IDM_L
+  MENUITEM "City production\tP", IDM_P
+  MENUITEM "Move randomly\tR", IDM_R
+  MENUITEM "Sentry\tS", IDM_S
+  MENUITEM "Wake up A/F\tU", IDM_U
+  MENUITEM "Survey\tY", IDM_Y
+  MENUITEM "Exit mode\tEsc", IDM_ESC
+  MENUITEM "Faster\t<", IDM_FASTER
+  MENUITEM "Slower\t>", IDM_SLOWER
+ }
 
-    POPUP "&Help"
-	{
-	MENUITEM "&Help",		IDM_HELP
-	MENUITEM "&About Empire...",	IDM_ABOUT
-	}
-    }
+ POPUP "&Help"
+ {
+  MENUITEM "&Help", IDM_HELP
+  MENUITEM "&About Empire...", IDM_ABOUT
+ }
+
+}

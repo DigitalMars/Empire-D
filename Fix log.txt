@@ -1,0 +1,69 @@
+Extracted some missing resource files from the exe:
+
+empire.ico
+blastmas.bmp
+unknown1.bmp
+cursor.bmp
+
+----------
+makefile
+
+Fixed filenames in clean - winemp not empire
+Removed dependence on winemp.lnk, and used DMD to link so that debugging information can be is linked in
+
+----------
+empire.rc
+
+Set Win9x dialog style
+Put the menu shortcut keys in the right place
+In InitBox, fixed 'Demo' to be a checkbox
+Removed option of 0 opponents from InitBox - it doesn't work and apparently isn't meant to
+Added Save As command
+
+----------
+winmain.d
+
+Cleaned up workaround to DMD 0.86 bug in std.c.windows.windows
+Fixed IDM_NEW so that cancelling works
+Set correct open/save dialogs and appropriate flags
+Deselected pens so that they're actually deleted, eliminating resource leaks
+Create the dashed pen only once on startup
+Clear filename on new game
+Implemented separate Save and Save As commands
+Implemented prompt to save on exit, new or open
+Highlight current square only if POV player's turn (still needs some work)
+
+----------
+move.d
+
+Added invalidateLoc calls to update current square highlight
+(works for 2 players, stuck for 3 or more)
+
+----------
+eplayer.d
+
+Fixed debugging calls to non-existent functions
+Added magic cursor position LOC_HIDDEN, to avoid a misleading highlight at the end of the player's turn
+Disabled cwatch - it either does nothing or causes Empire to hang
+
+----------
+display.d
+
+Clear dirty flag on loss of game
+
+----------
+twin.d
+
+Auto-detect location of exe, and look for help file there
+Catch file not found error
+
+----------
+newdisplay.d
+
+Refactored the text display engine to make more sense for D and for a GUI app.
+
+----------
+help.txt
+
+Run through spellchecker
+Removed an anachronism or two
