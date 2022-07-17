@@ -44,6 +44,7 @@
 #define IDM_NEW		170
 #define IDM_OPEN	171
 #define IDM_SAVE	172
+#define IDM_SAVE_AS	200
 #define IDM_ABOUT	173
 #define IDM_CLOSE	174
 #define IDM_SOUND	175

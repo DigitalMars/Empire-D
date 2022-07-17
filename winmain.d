@@ -20,6 +20,7 @@ extern (C) void gc_term();
 extern (C) void _minit();
 extern (C) void _moduleCtor();
 extern (C) void _moduleUnitTests();
+extern (Windows) BOOL DestroyWindow(HWND hWnd);
 
 extern (Windows)
 int WinMain(HINSTANCE hInstance,
@@ -57,11 +58,6 @@ int WinMain(HINSTANCE hInstance,
 /* Collect all Windows static global data.
  */
 
-extern (Windows)
-{
-    alias int function(HANDLE, uint, uint, int) DLGPROC;
-}
-
 struct Global
 {
     HANDLE hinst;	// instance of entire program program
@@ -70,13 +66,9 @@ struct Global
     int inited;		// !=0 means game is initialized
     HANDLE hSplash;	// handle for splash screen .bmp
 
-    // About
-    DLGPROC lpfnAboutDlgProc ;
-
-    // City Select
-    int phase;
-    int newphase;
-    DLGPROC lpfnCitySelectDlgProc ;
+	// City Select
+	int phase;
+	int newphase;
 
     // Init
     int numplayers;
@@ -89,7 +81,8 @@ struct Global
     // Menu
     HMENU hMenu;
 
-    OPENFILENAMEA ofn;	// save file
+	OPENFILENAMEA ofn;	// open file
+	OPENFILENAMEA sfn;	// save file
 
     double scalex;	// zoom factor
     double scaley;	// zoom factor
@@ -101,9 +94,9 @@ struct Global
     // Pen
     HPEN hPen;
 
-    // Bitmaps
-    HANDLE mapvaltab[MAPMAX];
-    HANDLE unknown10;
+	// Bitmaps
+	HANDLE[MAPMAX] mapvaltab;
+	HANDLE unknown10;
 
     Player *player;	// which player is being displayed
     ubyte *map;		// which map is being displayed
@@ -127,13 +120,16 @@ struct Global
     int pixelx;
     int pixely;
 
-    // Blast
-    HANDLE hBlast;	// bitmap of blast
-    HANDLE hBlastmask;	// bitmap of blast
-    int blastState;	// !=0 means draw blast
-    int blastx;
-    int blasty;		// location of blast
-};
+	// Blast
+	HANDLE hBlast;      // bitmap of blast
+	HANDLE hBlastmask;  // bitmap of blast
+	int blastState;     // !=0 means draw blast
+	int blastx;
+	int blasty;         // location of blast
+
+	bit dirty;          // game state has changed since save?
+	char bufferedKey;   // buffered gameplay keystroke
+}
 
 Global global;
 
@@ -141,10 +137,10 @@ Global global;
 int doit(HANDLE hInstance, HANDLE hPrevInstance,
                     LPSTR lpszCmdLine, int nCmdShow)
 {
-    static   char szAppName [] = "Empire";
-    HWND     hwnd;
-    MSG      msg;
-    WNDCLASS wndclass;
+	static char[] szAppName = "Empire";
+	HWND     hwnd;
+	MSG      msg;
+	WNDCLASS wndclass;
 
     if (!hPrevInstance) 
     {
@@ -186,23 +182,24 @@ else
     ShowWindow (hwnd, nCmdShow);
     UpdateWindow(hwnd);
 
-    while (true)
-    {
-	if (PeekMessageA(&msg, null, 0, 0, PM_REMOVE))
+	while (true)
 	{
-	    if (msg.message == WM_QUIT)
-		break;
-	    TranslateMessage (&msg);
-	    DispatchMessageA (&msg);
+		if (PeekMessageA(&msg, null, 0, 0, PM_REMOVE))
+		{
+			if (msg.message == WM_QUIT)
+				break;
+			TranslateMessage (&msg);
+			DispatchMessageA (&msg);
+		}
+		else
+		{
+			// idle processing
+			if (global.inited)
+				slice();
+			//invalidateLoc(global.cursor);
+		}
 	}
-	else
-	{
-	    // idle processing
-	    if (global.inited)
-		slice();
-	}
-    }
-    return msg.wParam;
+	return msg.wParam;
 }
 
 void DrawBitmap(HDC hdc, short xStart, short yStart, HBITMAP hBitmap, double scalex, double scaley, DWORD mode)
@@ -243,10 +240,10 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
     double newscalex;
     double newscaley;
 
-    // File dialog box
-    static char  szFileName [_MAX_PATH];
-    static char  szTitleName[_MAX_FNAME + _MAX_EXT];
-    static char *szFilter[] = [ "Empire Files (*.EMP)", "*.emp", "" ];
+	// File dialog box
+	static char[_MAX_PATH] szFileName;
+	static char[_MAX_FNAME + _MAX_EXT] szTitleName;
+	static char*[] szFilter = [ "Empire Files (*.EMP)", "*.emp", "" ];
 
     switch (message)
     {
@@ -316,16 +313,26 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 	    global.ofn.nMaxFileTitle     = _MAX_FNAME + _MAX_EXT;
 	    global.ofn.lpstrDefExt       = "emp";
 
-	    for (i = 0; i < MAPMAX; i++)
-	    {
-		hBitmap = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(i + 1));
-		global.mapvaltab[i] = hBitmap;
-	    }
-	    global.unknown10 = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_UNKNOWN10));
-	    global.hCursor = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_CURSOR));
-	    global.hSplash = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_SPLASH));
-	    global.hBlast = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_BLAST));
-	    global.hBlastmask = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_BLASTMASK));
+		szFileName[] = '\0';
+		szTitleName[] = '\0';
+
+		global.ofn.Flags = 0x00001000;
+		// OFN_FILEMUSTEXIST
+
+		global.sfn = global.ofn;
+		global.sfn.Flags = 0x00000806;
+		// OFN_HIDEREADONLY | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT
+
+		for (i = 0; i < MAPMAX; i++)
+		{
+			hBitmap = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(i + 1));
+			global.mapvaltab[i] = hBitmap;
+		}
+		global.unknown10 = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_UNKNOWN10));
+		global.hCursor = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_CURSOR));
+		global.hSplash = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_SPLASH));
+		global.hBlast = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_BLAST));
+		global.hBlastmask = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_BLASTMASK));
 
 	    hdc = GetDC(hwnd);
 
@@ -399,66 +406,67 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 	    switch (wParam)
 	    {
 		case IDM_NEW:		// start new game
-		    DialogBoxParamA(global.hinst, "InitBox", hwnd,
-				    global.lpfnInitDlgProc, 0);
-		    init_var();
-		    winSetup();
-		    global.inited = 1;
-		    InvalidateRect(hwnd, null, true) ;
-		    return 0;
+			if (promptSave(hwnd) &&
+				  DialogBoxParamA(global.hinst, "InitBox", hwnd,
+				    &InitDlgProc, 0) == IDOK) {
+				//debug MessageBoxA(hwnd, "Entering init_var", "Debug", MB_OK);
+				init_var();
+				//debug MessageBoxA(hwnd, "Entering winSetup", "Debug", MB_OK);
+				winSetup();
+				//debug MessageBoxA(hwnd, "Exited winSetup", "Debug", MB_OK);
+				global.inited = 1;
+				global.dirty = false;
+				szFileName[0] = '\0';
+				InvalidateRect(hwnd, null, true);
+			}
+			return 0;
 
 		case IDM_OPEN:		// open saved game
-		    if (GetOpenFileNameA (&global.ofn))
-		    {   FILE *fp;
+			if (promptSave(hwnd) && GetOpenFileNameA (&global.ofn)) {
+				FILE* fp;
 
-			fp = fopen(global.ofn.lpstrFile, "rb");
-			if (!fp)
-			{
-			    MessageBoxA (hwnd, "Empire Restore",
-				       "Could not read EMP file",
-				       MB_ICONEXCLAMATION | MB_OK);
+				fp = fopen(global.ofn.lpstrFile, "rb");
+				if (!fp) {
+					MessageBoxA (hwnd, "Empire Restore",
+						   "Could not read EMP file",
+						   MB_ICONEXCLAMATION | MB_OK);
+				} else {
+					init_var();
+					if (resgam(fp)) {
+						MessageBoxA (hwnd, "Empire Restore",
+						   "Corrupt EMP file",
+						   MB_ICONEXCLAMATION | MB_OK);
+						winSetup();
+					} else {
+						winRestore();
+					}
+					global.inited = 1;
+					InvalidateRect(hwnd, null, true);
+				}
 			}
-			else
-			{
-			    init_var();
-			    if (resgam(fp))
-			    {	MessageBoxA (hwnd, "Empire Restore",
-				       "Corrupt EMP file",
-				       MB_ICONEXCLAMATION | MB_OK);
-				winSetup();
-			    }
-			    else
-				winRestore();
-			    global.inited = 1;
-			    InvalidateRect(hwnd, null, true) ;
-			}
-		    }
-		    return 0;
 
-		case IDM_SAVE:		// save existing game
-		    if (GetOpenFileNameA (&global.ofn))
-		    {
-			if (var_savgam(global.ofn.lpstrFile))
-			{
-			    MessageBoxA (hwnd, "Empire Save",
-				       "Could not write EMP file",
-				       MB_ICONEXCLAMATION | MB_OK) ;
-			}
-		    }
-		    return 0;
+			return 0;
+
+		case IDM_SAVE:		// save game
+			save(hwnd, false);
+			return 0;
+
+		case IDM_SAVE_AS:
+			save(hwnd, true);
+			return 0;
 
 		case IDM_CLOSE:
-		    exit(0);
-		    return 0;
+			if (promptSave(hwnd)) DestroyWindow(hwnd);
+			return 0;
 
 		case IDM_SOUND:
 		    global.speaker ^= 1;
 		    return 0;
 
 		case IDM_ABOUT:
-		    DialogBoxParamA(global.hinst, "AboutBox", hwnd,
-				    global.lpfnAboutDlgProc, 0) ;
-		    return 0;
+			DialogBoxParamA(global.hinst, "AboutBox", hwnd,
+			  &AboutDlgProc, 0);
+			return 0;
 
 		case IDM_HELP:
 		    help(global.hinst);
@@ -518,18 +526,25 @@ version(none)
 		    // Insert into buffer of player we are watching
 		    Player *p;
 
-		    for (int i = 1; i <= numply; i++)
-		    {
-			p = Player.get(i);
-			if (p.watch)
+			for (int iPly = 1; iPly <= numply; iPly++)
 			{
-			    p.display.text.TTunget(ch);
-			    break;
+				p = Player.get(iPly);
+				if (p.watch)
+				{
+					/*	This is a rather primitive solution.  A better
+					 *	implementation would check whether the command
+					 *	has led to an actual change in the game state.
+					 */
+					global.dirty = true;
+
+					//p.display.text.TTunget(ch);
+					global.bufferedKey = ch;
+					break;
+				}
 			}
-		    }
-		    break;
-	    }
-	    return 0;
+			break;
+		}
+		return 0;
 
 	case WM_KEYDOWN:
 	    switch (wParam)
@@ -586,39 +601,39 @@ version(none)
 	    if (!global.inited || !global.player)
 	    {	double sx, sy;
 
-version (none)
-{
-		sx = global.cxClient / 240.0;
-		if (sx < 1)
-		    sx = 1;
-		sy = global.cyClient / 120.0;
-		if (sy < 1)
-		    sy = 1;
-}
-else
-{
-		sx = global.cxClient / 120.0;
-		if (sx < 1)
-		    sx = 1;
-		sy = global.cyClient / 160.0;
-		if (sy < 1)
-		    sy = 1;
-}
-		DrawBitmap(hdc, 0, 0, global.hSplash,
-			sx, sy,
-			SRCCOPY);
-		static int intro;
-		if (!intro++)
-		    PlaySoundA("intro.wav", null, SND_ASYNC | SND_FILENAME);
-	    }
-	    else
-	    {
-		//PRINTF("WM_PAINT: ulcorner = %d, cursor = %d, offsetx = %d, offsety = %d\n", global.ulcorner, global.cursor, global.offsetx, global.offsety);
-		int r, c;
-		int dx;
-		int dy;
-		DWORD mode;
-		RECT clipbox;
+			version (0)
+			{
+				sx = global.cxClient / 240.0;
+				if (sx < 1)
+					sx = 1;
+				sy = global.cyClient / 120.0;
+				if (sy < 1)
+					sy = 1;
+			}
+			else
+			{
+				sx = global.cxClient / 120.0;
+				if (sx < 1)
+					sx = 1;
+				sy = global.cyClient / 160.0;
+				if (sy < 1)
+					sy = 1;
+			}
+			DrawBitmap(hdc, 0, 0, global.hSplash,
+				sx, sy,
+				SRCCOPY);
+			static int intro;
+			if (!intro++)
+				PlaySoundA("intro.wav", null, SND_ASYNC | SND_FILENAME);
+		}
+		else
+		{
+			//PRINTF("WM_PAINT: ulcorner = %d, cursor = %d, offsetx = %d, offsety = %d\n", global.ulcorner, global.cursor, global.offsetx, global.offsety);
+			int r, c;
+			int dx;
+			int dy;
+			DWORD mode;
+			RECT clipbox;
 
 		GetClipBox(hdc, &clipbox);
 		//PRINTF("sector : %2d,%2d %2d,%2d\n", global.sector.left, global.sector.top, global.sector.right, global.sector.bottom);
@@ -872,6 +887,13 @@ else
 	    //PRINTF("-WM_PAINT\n");
 	    return 0;
 
+	case WM_CLOSE:
+		if (promptSave(hwnd)) DestroyWindow(hwnd);
+		return 0;
+
+	case WM_QUERYENDSESSION:
+		return promptSave(hwnd);
+
 	case WM_DESTROY:
 
 	    for (i = 0; i < MAPMAX; i++)
@@ -896,6 +918,62 @@ else
 	    break;
     }
     return DefWindowProcA(hwnd, message, wParam, lParam);
+}
+
+
+/**
+ *	Saves the current game.
+ *
+ *	Returns:
+ *		true	success
+ *		false	error
+ */
+bool save(HWND hwnd, bool saveAs) {
+	int named = true;
+
+	if (saveAs || global.sfn.lpstrFile[0] == '\0') {
+		named = GetSaveFileNameA(&global.sfn);
+	}
+
+	if (named) {
+		if (var_savgam(global.sfn.lpstrFile)) {
+			MessageBoxA(hwnd, "Empire Save",
+			  "Could not write EMP file",
+			  MB_ICONEXCLAMATION | MB_OK);
+			return false;
+		}
+		global.dirty = false;
+		return true;
+	} else {
+		return false;
+	}
+}
+
+/**
+ *	Prompts to save the current game if necessary.
+ *
+ *	Returns:
+ *		true	successfully saved, no need to save, or No was chosen
+ *		false	failed or cancelled
+ */
+bool promptSave(HWND hwnd) {
+	if (!global.dirty) return true;
+
+	char[] message = (global.sfn.lpstrFile[0] == '\0') ?
+	  "Save game?" :
+	  "Save changes to " ~ toString(global.sfn.lpstrFile) ~ "?\0";
+
+	switch (MessageBoxA(hwnd, message,
+		  "Game has changed", MB_ICONQUESTION | MB_YESNOCANCEL)) {
+		case IDYES:
+			return save(hwnd, false);
+
+		case IDNO:
+			return true;
+
+		case IDCANCEL:
+			return false;
+	}
 }
 
 
@@ -1073,7 +1151,8 @@ int dialogCitySelect(int oldphase)
 	oldphase = 0;		// default to armies
     global.phase = oldphase + IDD_ARMIES;
 
-    DialogBoxParamA(global.hinst, "CitySelectBox", global.hwnd, global.lpfnCitySelectDlgProc, 0) ;
+	DialogBoxParamA(global.hinst, "CitySelectBox", global.hwnd,
+	  &CitySelectDlgProc, 0);
 
     //PRINTF("dialogCitySelect() = %d\n", global.phase - IDD_ARMIES);
     return global.phase - IDD_ARMIES;
@@ -1276,10 +1355,10 @@ void winSetup()
 	Display *d = p.display;
 	d.initialize();
 
-	p.num = plynum;
-	p.map = (plynum == 0) ? .map : cast(ubyte *)calloc(MAPSIZE,1);
-	p.human = (plynum == 1 && !global.demo);
-	p.watch = DAnone;
+		p.num = plynum;
+		p.map = (plynum == 0) ? .map : new ubyte[MAPSIZE];
+		p.human = (plynum == 1 && !global.demo);
+		p.watch = DAnone;
 
 	if (p.human)
 	{
@@ -1304,7 +1383,8 @@ void winSetup()
 	    p.citsel();		// select city for each player
     }
 
-    plynum = 1;			// get the default player
+	plynum = 1;			// get the default player
+	global.player = &player[1];
 }
 
 void winRestore()
@@ -1354,7 +1434,7 @@ void winRestore()
  *	!=0 if sector moved
  */
 
-int adjSector(double newscalex, double newscaley)
+bool adjSector(double newscalex, double newscaley)
 {
     int cursorx;
     int dx;
@@ -1373,11 +1453,10 @@ int adjSector(double newscalex, double newscaley)
     int width;
     Display *d;
 
-    int moved = 0;
-    int newval;
+	bool moved = false;
+	int newval;
 
-    if (!global.player)		// if not initialized yet
-	return 0;
+	if (global.cursor <= LOC_LASTMAGIC) return false;
 
 //PRINTF("Before: ulcorner = %d\n", global.ulcorner);
     ncols = COL(global.cursor) - COL(global.ulcorner);
@@ -1418,10 +1497,10 @@ int adjSector(double newscalex, double newscaley)
 	}
     }
 
-    newval = dx * n + dx / 2 - cursorx;
-    if (newval != global.offsetx)
-	moved = 1;
-    global.offsetx = newval;
+	newval = dx * n + dx / 2 - cursorx;
+	if (newval != global.offsetx)
+		moved = true;
+	global.offsetx = newval;
 //PRINTF("offsetx = %d\n", global.offsetx);
     scmin = COL(global.cursor) - n;
     scmax = (width - 1);
@@ -1464,23 +1543,23 @@ int adjSector(double newscalex, double newscaley)
 	}
     }
 
-    newval = dy * n + dy / 2 - cursory;
-    if (newval != global.offsety)
-	moved = 1;
-    global.offsety = newval;
-    srmin = ROW(global.cursor) - n;
-    srmax = (width - 1);
+	newval = dy * n + dy / 2 - cursory;
+	if (newval != global.offsety)
+		moved = true;
+	global.offsety = newval;
+	srmin = ROW(global.cursor) - n;
+	srmax = (width - 1);
 //PRINTF("n = %d, height = %d, srmin = %d\n", n, width, srmin);
 
     d = global.player.display;
     //d.Smin = srmin * 256 + scmin;
     d.Smax = srmax * 256 + scmax;
 
-    newval = srmin * (Mcolmx + 1) + scmin;
-    if (newval != global.ulcorner)
-	moved = 1;
-    global.ulcorner = newval;
-    d.secbas = global.ulcorner;
+	newval = srmin * (Mcolmx + 1) + scmin;
+	if (newval != global.ulcorner)
+		moved = true;
+	global.ulcorner = newval;
+	d.secbas = global.ulcorner;
 //PRINTF("offsetx = %d, offsety = %d\n", global.offsetx, global.offsety);
 //PRINTF("After: ulcorner = %d, Smin = %x, Smax = %x\n", global.ulcorner, d.Smin, d.Smax);
 
@@ -1503,15 +1582,19 @@ int adjSector(double newscalex, double newscaley)
  */
 
 void invalidateLoc(loc_t loc)
-{
-    RECT rect;
-    int r, c;
-    int dx;
-    int dy;
-    DWORD mode;
+in {
+	assert (loc < MAPSIZE);
+}
+body {
+	RECT rect;
+	int r, c;
+	int dx;
+	int dy;
+	DWORD mode;
 
 //PRINTF("invalidateLoc(loc = %d)\n", loc);
-    assert(loc < MAPSIZE);
+
+	if (loc <= LOC_LASTMAGIC) return;  // no current cursor
 
     r = ROW(loc) - ROW(global.ulcorner);
     c = COL(loc) - COL(global.ulcorner);
