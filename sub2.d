@@ -33,7 +33,7 @@ in
 {
 	assert(chkloc(loc));
 }
-body
+do
 {
 	int i;
 

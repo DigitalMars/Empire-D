@@ -32,6 +32,8 @@ version (Windows) {
 }
 
 debug (tslice) bool debugSlices = true;
+
+
 // For each player
 
 struct Player
@@ -620,7 +622,6 @@ struct Player
 	{
 		int row, col, rowsize, colsize, size;
 		//Player* p = this;
-
 		version (Windows) {
 			NewDisplay d = display;
 		} else {
@@ -3834,7 +3835,7 @@ struct Player
 			assert(chkloc(beg));
 			assert(chkloc(end));
 		}
-		body
+		do
 		{
 			int dummy;
 
@@ -3847,7 +3848,7 @@ struct Player
 			assert(chkloc(beg));
 			assert(chkloc(end));
 		}
-		body
+		do
 		{
 			int dummy;
 
@@ -3860,7 +3861,7 @@ struct Player
 			assert(chkloc(beg));
 			assert(chkloc(end));
 		}
-		body
+		do
 		{
 			int dummy;
 
@@ -3873,7 +3874,7 @@ struct Player
 			assert(chkloc(beg));
 			assert(chkloc(end));
 		}
-		body
+		do
 		{
 			int dummy;
 
@@ -3886,7 +3887,7 @@ struct Player
 			assert(chkloc(beg));
 			assert(chkloc(end));
 		}
-		body
+		do
 		{
 			return path.path(this, beg, end, dir, ok, pr2, true);
 		}
@@ -3897,7 +3898,7 @@ struct Player
 			assert(chkloc(beg));
 			assert(chkloc(end));
 		}
-		body
+		do
 		{
 			return path.path(this,beg,end,dir,ok,pr2,false);
 		}

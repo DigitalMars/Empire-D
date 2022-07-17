@@ -132,7 +132,7 @@ in
 		assert(ok[i] == 0 || ok[i] == 1);
 	}
 }
-body
+do
 {
 	int i;
 	int movsav;

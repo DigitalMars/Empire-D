@@ -68,7 +68,7 @@ int arrow(dir_t dir)
 	{
 		assert(-1 <= dir && dir <= 7);
 	}
-	body
+    do
 	{
 		static int arrow[9] =
 			[0,1,-Mcolmx,-Mcolmx-1,-Mcolmx-2,-1,Mcolmx,Mcolmx+1,Mcolmx+2];

@@ -401,7 +401,7 @@ deprecated struct Display
 	{
 		assert(0 <= type && type < TYPMAX);
 	}
-	body
+	do
 	{
 		static char[][2][8] msg =
 		[
