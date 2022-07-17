@@ -976,6 +976,12 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 		}
 	}
 	catch (Exception ignored) {
+		try {
+			MessageBoxA(null, cast(char*) ignored.toString(), "Error",
+			MB_OK | MB_ICONEXCLAMATION);
+		} catch (Exception fullyIgnored) {
+
+		}
 	}
 	return DefWindowProcA(hwnd, message, wParam, lParam);
 }
@@ -1195,6 +1201,12 @@ extern (Windows) BOOL CitySelectDlgProc(HWND hDlg, uint message, uint wParam,
 			break ;
 		}
 	}  catch (Exception ignored) {
+		try {
+			MessageBoxA(null, cast(char*) ignored.toString(), "Error",
+			MB_OK | MB_ICONEXCLAMATION);
+		} catch (Exception fullyIgnored) {
+
+		}
 	}
 	return result;
 }
