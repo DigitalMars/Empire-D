@@ -22,6 +22,7 @@ import core.stdc.stdio;
 import core.sys.windows.windows;
 import std.math;
 import std.string;
+import std.conv;
 
 import empire;
 import winemp;
@@ -31,13 +32,14 @@ import twin;
 import init;
 import move;
 import var;
+import maps;
 
 /********************************************************/
 extern (C) void gc_init();
 extern (C) void gc_term();
 extern (C) void _minit();
 extern (C) void _moduleCtor();
-extern (C) void _moduleUnitTests();
+//extern (C) void _moduleUnitTests();
 extern (Windows) BOOL DestroyWindow(HWND hWnd);
 
 extern (Windows)
@@ -54,12 +56,12 @@ int WinMain(HINSTANCE hInstance,
 	try
 	{
 		_moduleCtor();		// call module constructors
-		_moduleUnitTests();	// run unit tests (optional)
+		//_moduleUnitTests();	// run unit tests (optional)
 
 		// insert user code here
 		result = doit(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
 	}
-	catch (Object o)		// catch any uncaught exceptions
+	catch (Throwable o)		// catch any uncaught exceptions
 	{
 		MessageBoxA(null, cast(char*) o.toString(), "Error",
 				MB_OK | MB_ICONEXCLAMATION);
@@ -105,7 +107,7 @@ struct Global
 
 	// Font
 	HFONT  hFont;
-	short cxChar, cxCaps, cyChar;
+	int cxChar, cxCaps, cyChar;
 
 	// Pen
 	//HPEN borderPen;
@@ -155,10 +157,10 @@ Global global;
 int doit(HANDLE hInstance, HANDLE hPrevInstance,
 					LPSTR lpszCmdLine, int nCmdShow)
 {
-	static char[] szAppName = "Empire";
+	string szAppName = "Empire";
 	HWND     hwnd;
 	MSG      msg;
-	WNDCLASS wndclass;
+	WNDCLASSA wndclass;
 
 	if (!hPrevInstance)
 	{
@@ -168,10 +170,10 @@ int doit(HANDLE hInstance, HANDLE hPrevInstance,
 		wndclass.cbWndExtra    = 0;
 		wndclass.hInstance     = hInstance;
 		wndclass.hIcon         = LoadIconA(hInstance, "About");
-		wndclass.hCursor       = LoadCursorA (null, IDC_ARROW);
+		wndclass.hCursor       = LoadCursor(null, IDC_ARROW);
 		wndclass.hbrBackground = GetStockObject (WHITE_BRUSH);
-		wndclass.lpszMenuName  = szAppName;
-		wndclass.lpszClassName = szAppName;
+		wndclass.lpszMenuName  = szAppName.ptr;
+		wndclass.lpszClassName = szAppName.ptr;
 
 		RegisterClassA(&wndclass);
 
@@ -182,7 +184,7 @@ int doit(HANDLE hInstance, HANDLE hPrevInstance,
 
 	version(none)
 	{
-		hwnd = CreateWindowA(szAppName, "Empire: Wargame of the Century",
+		hwnd = CreateWindowA(szAppName.ptr, "Empire: Wargame of the Century",
 				WS_OVERLAPPEDWINDOW,
 				CW_USEDEFAULT, CW_USEDEFAULT,
 				124, 160 + 34 + 20,
@@ -190,7 +192,7 @@ int doit(HANDLE hInstance, HANDLE hPrevInstance,
 	}
 	else
 	{
-		hwnd = CreateWindowA(szAppName, "Empire: Wargame of the Century",
+		hwnd = CreateWindowA(szAppName.ptr, "Empire: Wargame of the Century",
 				WS_OVERLAPPEDWINDOW,
 				CW_USEDEFAULT, CW_USEDEFAULT,
 				CW_USEDEFAULT, CW_USEDEFAULT,
@@ -245,7 +247,7 @@ void DrawBitmap(HDC hdc, short xStart, short yStart, HBITMAP hBitmap,
 }
 
 extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
-					         LPARAM lParam)
+					         LPARAM lParam) nothrow
 {
 	HANDLE		hBitmap;
 	HDC			hdc;
@@ -260,20 +262,21 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 	double newscaley;
 
 	// File dialog box
-	static char[_MAX_PATH] szFileName;
-	static char[_MAX_FNAME + _MAX_EXT] szTitleName;
-	static char*[] szFilter = [ "Empire Files (*.EMP)", "*.emp", "" ];
+	static char[MAX_PATH] szFileName;
+	static char[MAX_PATH] szTitleName;
+	static string[] szFilter = [ "Empire Files (*.EMP)", "*.emp", "" ];
 
-	switch (message)
-	{
-	case WM_CREATE:
-		global.speaker = 1;
+	try {
+		switch (message)
+		{
+			case WM_CREATE:
+			global.speaker = 1;
 
-		global.cxClient = 120;
-		global.cyClient = 160;
+			global.cxClient = 120;
+			global.cyClient = 160;
 
-		global.pixelx = 120;
-		global.pixely = 120;
+			global.pixelx = 120;
+			global.pixely = 120;
 
 		global.hwnd = hwnd;
 		global.scalex = 1.0;
@@ -283,266 +286,266 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 		global.offsetx = 0;
 		global.offsety = 0;
 
-		// Clipping rectangles
-		global.text.left = 0;
-		global.text.top = 0;
-		global.text.right = global.pixelx;
-		global.text.bottom = 40;
+			// Clipping rectangles
+			global.text.left = 0;
+			global.text.top = 0;
+			global.text.right = global.pixelx;
+			global.text.bottom = 40;
 
-		global.sector.left = 0;
-		global.sector.top = 40;
-		global.sector.right = global.pixelx;
-		global.sector.bottom = global.sector.top + global.pixely;
+			global.sector.left = 0;
+			global.sector.top = 40;
+			global.sector.right = global.pixelx;
+			global.sector.bottom = global.sector.top + global.pixely;
 
-		global.sectorRegion = CreateRectRgn(global.sector.left, global.sector.top, global.sector.right, global.sector.bottom);
-		global.textRegion = CreateRectRgn(global.text.left, global.text.top, global.text.right, global.text.bottom);
+			global.sectorRegion = CreateRectRgn(global.sector.left, global.sector.top, global.sector.right, global.sector.bottom);
+			global.textRegion = CreateRectRgn(global.text.left, global.text.top, global.text.right, global.text.bottom);
 
-		// About dialog box
-		//hInstance = ((LPCREATESTRUCT) lParam)->hInstance;
+			// About dialog box
+			//hInstance = ((LPCREATESTRUCT) lParam)->hInstance;
 
-		// Menu
-		global.hMenu = LoadMenuA(global.hinst, "PopMenu");
-		global.hMenu = GetSubMenu(global.hMenu, 0);
+			// Menu
+			global.hMenu = LoadMenuA(global.hinst, "PopMenu");
+			global.hMenu = GetSubMenu(global.hMenu, 0);
 
-		// File dialog box
-		global.ofn.lStructSize       = OPENFILENAMEA.sizeof;
-		global.ofn.hwndOwner         = hwnd;
-		global.ofn.lpstrFilter       = szFilter[0];
-		global.ofn.lpstrFile         = szFileName;
-		global.ofn.nMaxFile          = _MAX_PATH;
-		global.ofn.lpstrFileTitle    = szTitleName;
-		global.ofn.nMaxFileTitle     = _MAX_FNAME + _MAX_EXT;
-		global.ofn.lpstrDefExt       = "emp";
+			// File dialog box
+			global.ofn.lStructSize       = OPENFILENAMEA.sizeof;
+			global.ofn.hwndOwner         = hwnd;
+			global.ofn.lpstrFilter       = szFilter[0].ptr;
+			global.ofn.lpstrFile         = szFileName.ptr;
+			global.ofn.nMaxFile          = MAX_PATH;
+			global.ofn.lpstrFileTitle    = szTitleName.ptr;
+			global.ofn.nMaxFileTitle     = MAX_PATH;
+			global.ofn.lpstrDefExt       = "emp";
 
-		szFileName[] = '\0';
-		szTitleName[] = '\0';
+			szFileName[] = '\0';
+			szTitleName[] = '\0';
 
-		global.ofn.Flags = 0x00001000;
-		// OFN_FILEMUSTEXIST
+			global.ofn.Flags = 0x00001000;
+			// OFN_FILEMUSTEXIST
 
-		global.sfn = global.ofn;
-		global.sfn.Flags = 0x00000806;
-		// OFN_HIDEREADONLY | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT
+			global.sfn = global.ofn;
+			global.sfn.Flags = 0x00000806;
+			// OFN_HIDEREADONLY | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT
 
-		for (i = 0; i < MAPMAX; i++)
-		{
-			hBitmap = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(i + 1));
-			global.mapvaltab[i] = hBitmap;
-		}
-		global.unknown10 = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_UNKNOWN10));
-		global.hCursor = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_CURSOR));
-		global.hSplash = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_SPLASH));
-		global.hBlast = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_BLAST));
-		global.hBlastmask = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_BLASTMASK));
-
-		hdc = GetDC(hwnd);
-
-		//global.borderPen = CreatePen(PS_SOLID, dx/3+2, RGB(255, 0, 0));
-		global.dashedPen = CreatePen(PS_DASH, 0, RGB(255, 255, 255));
-		global.originalPen = SelectObject(hdc, global.dashedPen);
-
-		logfont.lfHeight = 10;
-		logfont.lfWidth = 5;
-		global.hFont = CreateFontIndirectA(&logfont);
-		SelectObject(hdc, global.hFont);
-
-		GetTextMetricsA(hdc, &tm);
-		global.cxChar = tm.tmAveCharWidth;
-		global.cxCaps = (tm.tmPitchAndFamily & 1 ? 3 : 2) * global.cxChar / 2;
-		global.cyChar = tm.tmHeight + tm.tmExternalLeading;
-
-		ReleaseDC(hwnd, hdc);
-		return 0;
-
-	case WM_SIZE:
-		global.cyClient = HIWORD(lParam);
-		global.cxClient = LOWORD(lParam);
-		//PRINTF("cxClient = %d, cyClient = %d\n", global.cxClient, global.cyClient);
-
-		global.pixelx = global.cxClient;
-		if (global.pixelx < 120)
-			global.pixelx = 120;
-		if (global.pixelx > (Mcolmx + 1) * 10)
-			global.pixelx = (Mcolmx + 1) * 10;
-		if (global.pixelx / cast(int) (10 * global.scalex) < 5)
-		{
-			global.scalex = global.pixelx / (10 * 5.0);
-			global.scaley = global.scalex;
-		}
-
-		global.pixely = global.cyClient - 40;
-		if (global.pixely < 120)
-			global.pixely = 120;
-		if (global.pixely > (Mrowmx + 1) * 10)
-			global.pixely = (Mrowmx + 1) * 10;
-		if (global.pixely / cast(int) (10 * global.scaley) < 5)
-		{
-			global.scaley = global.pixely / (10 * 5.0);
-			global.scalex = global.scaley;
-		}
-
-		global.text.right = global.pixelx;
-		global.sector.right = global.pixelx;
-		global.sector.bottom = global.sector.top + global.pixely;
-
-		SetRectRgn(global.sectorRegion, global.sector.left, global.sector.top, global.sector.right, global.sector.bottom);
-		SetRectRgn(global.textRegion, global.text.left, global.text.top, global.text.right, global.text.bottom);
-
-		if (global.inited && global.player)
-		{
-			//Display* d = global.player.display;
-			NewDisplay d = global.player.display;
-
-			d.secbas = -1;
-			//d.setdispsize(d.text.nrows, d.text.ncols);
-			//d.text.clear();
-			adjSector(global.scalex, global.scaley);
-		}
-
-		return 0;
-
-	//case WM_LBUTTONDOWN:
-	case WM_RBUTTONDOWN:
-		point.x = lParam & 0xFFFF;
-		point.y = (lParam >> 16) & 0xFFFF;
-		ClientToScreen(hwnd, &point);
-		TrackPopupMenu(global.hMenu, 0, point.x, point.y, 0, hwnd, null);
-		return 0;
-
-	case WM_COMMAND:
-		switch (wParam)
-		{
-		case IDM_NEW:		// start new game
-			if (promptSave(hwnd) &&
-				  DialogBoxParamA(global.hinst, "InitBox", hwnd,
-				    &InitDlgProc, 0) == IDOK) {
-				//debug MessageBoxA(hwnd, "Entering init_var", "Debug", MB_OK);
-				init_var();
-				//debug MessageBoxA(hwnd, "Entering winSetup", "Debug", MB_OK);
-				winSetup();
-				//debug MessageBoxA(hwnd, "Exited winSetup", "Debug", MB_OK);
-				global.inited = 1;
-				global.dirty = false;
-				szFileName[0] = '\0';
-				InvalidateRect(hwnd, null, true);
+			for (i = 0; i < MAPMAX; i++)
+			{
+				hBitmap = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(i + 1));
+				global.mapvaltab[i] = hBitmap;
 			}
+			global.unknown10 = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_UNKNOWN10));
+			global.hCursor = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_CURSOR));
+			global.hSplash = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_SPLASH));
+			global.hBlast = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_BLAST));
+			global.hBlastmask = LoadBitmapA(global.hinst, MAKEINTRESOURCEA(BMP_BLASTMASK));
+
+			hdc = GetDC(hwnd);
+
+			//global.borderPen = CreatePen(PS_SOLID, dx/3+2, RGB(255, 0, 0));
+			global.dashedPen = CreatePen(PS_DASH, 0, RGB(255, 255, 255));
+			global.originalPen = SelectObject(hdc, global.dashedPen);
+
+			logfont.lfHeight = 10;
+			logfont.lfWidth = 5;
+			global.hFont = CreateFontIndirectA(&logfont);
+			SelectObject(hdc, global.hFont);
+
+			GetTextMetricsA(hdc, &tm);
+			global.cxChar = tm.tmAveCharWidth;
+			global.cxCaps = (tm.tmPitchAndFamily & 1 ? 3 : 2) * global.cxChar / 2;
+			global.cyChar = tm.tmHeight + tm.tmExternalLeading;
+
+			ReleaseDC(hwnd, hdc);
 			return 0;
 
-		case IDM_OPEN:		// open saved game
-			if (promptSave(hwnd) && GetOpenFileNameA (&global.ofn)) {
-				FILE* fp;
+			case WM_SIZE:
+			global.cyClient = HIWORD(lParam);
+			global.cxClient = LOWORD(lParam);
+			//PRINTF("cxClient = %d, cyClient = %d\n", global.cxClient, global.cyClient);
 
-				fp = fopen(global.ofn.lpstrFile, "rb");
-				if (!fp) {
-					MessageBoxA (hwnd, "Empire Restore",
-						   "Could not read EMP file",
-						   MB_ICONEXCLAMATION | MB_OK);
-				} else {
+			global.pixelx = global.cxClient;
+			if (global.pixelx < 120)
+				global.pixelx = 120;
+			if (global.pixelx > (Mcolmx + 1) * 10)
+				global.pixelx = (Mcolmx + 1) * 10;
+			if (global.pixelx / cast(int) (10 * global.scalex) < 5)
+			{
+				global.scalex = global.pixelx / (10 * 5.0);
+				global.scaley = global.scalex;
+			}
+
+			global.pixely = global.cyClient - 40;
+			if (global.pixely < 120)
+				global.pixely = 120;
+			if (global.pixely > (Mrowmx + 1) * 10)
+				global.pixely = (Mrowmx + 1) * 10;
+			if (global.pixely / cast(int) (10 * global.scaley) < 5)
+			{
+				global.scaley = global.pixely / (10 * 5.0);
+				global.scalex = global.scaley;
+			}
+
+			global.text.right = global.pixelx;
+			global.sector.right = global.pixelx;
+			global.sector.bottom = global.sector.top + global.pixely;
+
+			SetRectRgn(global.sectorRegion, global.sector.left, global.sector.top, global.sector.right, global.sector.bottom);
+			SetRectRgn(global.textRegion, global.text.left, global.text.top, global.text.right, global.text.bottom);
+
+			if (global.inited && global.player)
+			{
+				//Display* d = global.player.display;
+				NewDisplay d = global.player.display;
+
+				d.secbas = -1;
+				//d.setdispsize(d.text.nrows, d.text.ncols);
+				//d.text.clear();
+				adjSector(global.scalex, global.scaley);
+			}
+
+			return 0;
+
+			//case WM_LBUTTONDOWN:
+			case WM_RBUTTONDOWN:
+			point.x = lParam & 0xFFFF;
+			point.y = (lParam >> 16) & 0xFFFF;
+			ClientToScreen(hwnd, &point);
+			TrackPopupMenu(global.hMenu, 0, point.x, point.y, 0, hwnd, null);
+			return 0;
+
+			case WM_COMMAND:
+			switch (wParam)
+			{
+				case IDM_NEW:        // start new game
+				if (promptSave(hwnd) &&
+				DialogBoxParamA(global.hinst, "InitBox", hwnd,
+				&InitDlgProc, 0) == IDOK) {
+					//debug MessageBoxA(hwnd, "Entering init_var", "Debug", MB_OK);
 					init_var();
-					if (resgam(fp)) {
-						MessageBoxA (hwnd, "Empire Restore",
-						   "Corrupt EMP file",
-						   MB_ICONEXCLAMATION | MB_OK);
-						winSetup();
-					} else {
-						winRestore();
-					}
+					//debug MessageBoxA(hwnd, "Entering winSetup", "Debug", MB_OK);
+					winSetup();
+					//debug MessageBoxA(hwnd, "Exited winSetup", "Debug", MB_OK);
 					global.inited = 1;
+					global.dirty = false;
+					szFileName[0] = '\0';
 					InvalidateRect(hwnd, null, true);
 				}
-			}
-
-			return 0;
-
-		case IDM_SAVE:		// save game
-			save(hwnd, false);
-			return 0;
-
-		case IDM_SAVE_AS:
-			save(hwnd, true);
-			return 0;
-
-		case IDM_CLOSE:
-			if (promptSave(hwnd)) DestroyWindow(hwnd);
-			return 0;
-
-		case IDM_SOUND:
-			global.speaker ^= 1;
-			return 0;
-
-		case IDM_ABOUT:
-			DialogBoxParamA(global.hinst, "AboutBox", hwnd,
-			  &AboutDlgProc, 0);
-			return 0;
-
-		case IDM_HELP:
-			help(global.hinst);
-			return 0;
-
-		case IDM_ZOOMIN:
-			goto Lzoomin;
-
-		case IDM_ZOOMOUT:
-			goto Lzoomout;
-
-		case IDM_F:      ch = 'F';	goto Linsert;
-		case IDM_G:      ch = 'G';	goto Linsert;
-		case IDM_H:      ch = 'H';	goto Linsert;
-		case IDM_I:      ch = 'I';	goto Linsert;
-		case IDM_K:      ch = 'K';	goto Linsert;
-		case IDM_L:      ch = 'L';	goto Linsert;
-		case IDM_N:      ch = 'N';	goto Linsert;
-		case IDM_P:      ch = 'P';	goto Linsert;
-		case IDM_R:      ch = 'R';	goto Linsert;
-		case IDM_S:      ch = 'S';	goto Linsert;
-		case IDM_U:      ch = 'U';	goto Linsert;
-		case IDM_Y:      ch = 'Y';	goto Linsert;
-		case IDM_ESC:    ch = ESC;	goto Linsert;
-		case IDM_FASTER: ch = '<';	goto Linsert;
-		case IDM_SLOWER: ch = '>';	goto Linsert;
-		case IDM_POV:    ch = 'O';	goto Linsert;
-
-		default:
-			break;
-		}
-		break;
-
-	case WM_CHAR:
-		switch (wParam)
-		{
-		version(none)
-		{
-			case 'c':
-				DialogBoxParamA(global.hinst, "CitySelectBox", hwnd,
-						global.lpfnCitySelectDlgProc, 0);
 				return 0;
-		}
 
-		case 'j':
-		case 'J':
-			global.speaker ^= 1;
-			return 0;
+				case IDM_OPEN:        // open saved game
+				if (promptSave(hwnd) && GetOpenFileNameA (&global.ofn)) {
+					FILE* fp;
 
-		case 12:
-			InvalidateRect(hwnd, null, true);
-			break;
+					fp = fopen(global.ofn.lpstrFile, "rb");
+					if (!fp) {
+						MessageBoxA (hwnd, "Empire Restore",
+						"Could not read EMP file",
+						MB_ICONEXCLAMATION | MB_OK);
+					} else {
+						init_var();
+						if (resgam(fp)) {
+							MessageBoxA (hwnd, "Empire Restore",
+							"Corrupt EMP file",
+							MB_ICONEXCLAMATION | MB_OK);
+							winSetup();
+						} else {
+							winRestore();
+						}
+						global.inited = 1;
+						InvalidateRect(hwnd, null, true);
+					}
+				}
 
-		default:
-			ch = wParam;
-		Linsert:
-			// Insert into buffer of player we are watching
-			Player* p;
+				return 0;
 
-			for (int iPly = 1; iPly <= numply; iPly++)
+				case IDM_SAVE:        // save game
+				save(hwnd, false);
+				return 0;
+
+				case IDM_SAVE_AS:
+				save(hwnd, true);
+				return 0;
+
+				case IDM_CLOSE:
+				if (promptSave(hwnd)) DestroyWindow(hwnd);
+				return 0;
+
+				case IDM_SOUND:
+				global.speaker ^= 1;
+				return 0;
+
+				case IDM_ABOUT:
+				DialogBoxParamA(global.hinst, "AboutBox", hwnd,
+				&AboutDlgProc, 0);
+				return 0;
+
+				case IDM_HELP:
+				help(global.hinst);
+				return 0;
+
+				case IDM_ZOOMIN:
+				goto Lzoomin;
+
+				case IDM_ZOOMOUT:
+				goto Lzoomout;
+
+				case IDM_F:      ch = 'F';    goto Linsert;
+				case IDM_G:      ch = 'G';    goto Linsert;
+				case IDM_H:      ch = 'H';    goto Linsert;
+				case IDM_I:      ch = 'I';    goto Linsert;
+				case IDM_K:      ch = 'K';    goto Linsert;
+				case IDM_L:      ch = 'L';    goto Linsert;
+				case IDM_N:      ch = 'N';    goto Linsert;
+				case IDM_P:      ch = 'P';    goto Linsert;
+				case IDM_R:      ch = 'R';    goto Linsert;
+				case IDM_S:      ch = 'S';    goto Linsert;
+				case IDM_U:      ch = 'U';    goto Linsert;
+				case IDM_Y:      ch = 'Y';    goto Linsert;
+				case IDM_ESC:    ch = ESC;    goto Linsert;
+				case IDM_FASTER: ch = '<';    goto Linsert;
+				case IDM_SLOWER: ch = '>';    goto Linsert;
+				case IDM_POV:    ch = 'O';    goto Linsert;
+
+				default:
+				break ;
+			}
+			break ;
+
+			case WM_CHAR:
+			switch (wParam)
 			{
-				p = Player.get(iPly);
-				if (p.watch)
+				version(none)
 				{
-					/*	This is a rather primitive solution.  A better
+					case 'c':
+					DialogBoxParamA(global.hinst, "CitySelectBox", hwnd,
+					global.lpfnCitySelectDlgProc, 0);
+					return 0;
+				}
+
+				case 'j':
+				case 'J':
+				global.speaker ^= 1;
+				return 0;
+
+				case 12:
+				InvalidateRect(hwnd, null, true);
+				break ;
+
+				default:
+				ch = wParam;
+				Linsert:
+				// Insert into buffer of player we are watching
+				Player* p;
+
+				for (int iPly = 1; iPly <= numply; iPly++)
+				{
+					p = Player.get(iPly);
+					if (p.watch)
+					{
+						/*	This is a rather primitive solution.  A better
 					 *	implementation would check whether the command
 					 *	has led to an actual change in the game state.
 					 */
-					global.dirty = true;
+						global.dirty = true;
 
 					//p.display.text.TTunget(ch);
 					global.bufferedKey = ch;
@@ -553,103 +556,104 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 		}
 		return 0;
 
-	case WM_KEYDOWN:
-		switch (wParam)
-		{
-		case VK_ADD:
-		Lzoomin:
-			newscalex = global.scalex * 1.125;
-			newscaley = global.scaley * 1.125;
-			if (global.pixelx / cast(int) (10 * newscalex) >= 5)
+			case WM_KEYDOWN:
+			switch (wParam)
 			{
-				if (newscalex < newscaley)
-					newscaley = global.scaley;
+				case VK_ADD:
+				Lzoomin:
+				newscalex = global.scalex * 1.125;
+				newscaley = global.scaley * 1.125;
+				if (global.pixelx / cast(int) (10 * newscalex) >= 5)
+				{
+					if (newscalex < newscaley)
+						newscaley = global.scaley;
+					else
+						newscaley = newscalex;
+					goto Lnew;
+				}
+				return 0;
+
+				case VK_SUBTRACT:
+				Lzoomout:
+				newscalex = global.scalex / 1.125;
+				newscaley = global.scaley / 1.125;
+				if (global.pixelx / cast(int) (10 * newscalex) <= (Mcolmx + 1))
+				{
+					if (global.pixely / cast(int) (10 * newscaley) > (Mrowmx + 1))
+						newscaley = global.scaley;
+					//PRINTF("newscale x,y = %g, %g\n", newscalex, newscaley);
+					Lnew:
+
+					adjSector(newscalex, newscaley);
+
+					InvalidateRect(hwnd, &global.sector, false);
+				}
+				return 0;
+
+				case VK_PRIOR:    // PgUp
+				case VK_NEXT:    // PgDn
+				case VK_HOME:
+				case VK_LEFT:
+				case VK_RIGHT:
+				case VK_UP:
+				case VK_DOWN:
+				return 0;
+
+				default:
+				break ;
+			}
+			break ;
+
+			case WM_PAINT:
+			//PRINTF("+WM_PAINT\n");
+			hdc = BeginPaint (hwnd, &ps);
+
+			if (!global.inited || !global.player)
+			{
+				double sx, sy;
+
+				version (0)
+				{
+					sx = global.cxClient / 240.0;
+					if (sx < 1)
+						sx = 1;
+					sy = global.cyClient / 120.0;
+					if (sy < 1)
+						sy = 1;
+				}
 				else
-					newscaley = newscalex;
-				goto Lnew;
-			}
-			return 0;
-
-		case VK_SUBTRACT:
-		Lzoomout:
-			newscalex = global.scalex / 1.125;
-			newscaley = global.scaley / 1.125;
-			if (global.pixelx / cast(int) (10 * newscalex) <= (Mcolmx + 1))
-			{
-				if (global.pixely / cast(int) (10 * newscaley) > (Mrowmx + 1))
-				newscaley = global.scaley;
-				//PRINTF("newscale x,y = %g, %g\n", newscalex, newscaley);
-			Lnew:
-
-				adjSector(newscalex, newscaley);
-
-				InvalidateRect(hwnd, &global.sector, false);
-			}
-			return 0;
-
-		case VK_PRIOR:	// PgUp
-		case VK_NEXT:	// PgDn
-		case VK_HOME:
-		case VK_LEFT:
-		case VK_RIGHT:
-		case VK_UP:
-		case VK_DOWN:
-			return 0;
-
-		default:
-			break;
-		}
-		break;
-
-	case WM_PAINT:
-		//PRINTF("+WM_PAINT\n");
-		hdc = BeginPaint (hwnd, &ps);
-
-		if (!global.inited || !global.player)
-		{
-			double sx, sy;
-
-			version (0)
-			{
-				sx = global.cxClient / 240.0;
-				if (sx < 1)
-					sx = 1;
-				sy = global.cyClient / 120.0;
-				if (sy < 1)
-					sy = 1;
+				{
+					sx = global.cxClient / 120.0;
+					if (sx < 1)
+						sx = 1;
+					sy = global.cyClient / 160.0;
+					if (sy < 1)
+						sy = 1;
+				}
+				DrawBitmap(hdc, 0, 0, global.hSplash,
+				sx, sy,
+				SRCCOPY);
+				static int intro;
+				if (!intro++)
+					PlaySoundA("intro.wav", null, SND_ASYNC | SND_FILENAME);
 			}
 			else
 			{
-				sx = global.cxClient / 120.0;
-				if (sx < 1)
-					sx = 1;
-				sy = global.cyClient / 160.0;
-				if (sy < 1)
-					sy = 1;
-			}
-			DrawBitmap(hdc, 0, 0, global.hSplash,
-				sx, sy,
-				SRCCOPY);
-			static int intro;
-			if (!intro++)
-				PlaySoundA("intro.wav", null, SND_ASYNC | SND_FILENAME);
-		}
-		else
-		{
-			//PRINTF("WM_PAINT: ulcorner = %d, cursor = %d, offsetx = %d, offsety = %d\n", global.ulcorner, global.cursor, global.offsetx, global.offsety);
-			int r, c;
-			int dx;
-			int dy;
-			DWORD mode;
-			RECT clipbox;
 
-			GetClipBox(hdc, &clipbox);
-			//PRINTF("sector : %2d,%2d %2d,%2d\n", global.sector.left, global.sector.top, global.sector.right, global.sector.bottom);
-			//PRINTF("clipbox: %2d,%2d %2d,%2d\n", clipbox.left, clipbox.top, clipbox.right, clipbox.bottom);
-			if (clipbox.bottom < global.sector.top)
-				goto LpaintText;
+				//PRINTF("WM_PAINT: ulcorner = %d, cursor = %d, offsetx = %d, offsety = %d\n", global.ulcorner, global.cursor, global.offsetx, global.offsety);
+				int r, c;
+				int dx;
+				int dy;
+				DWORD mode;
+				RECT clipbox;
 
-			SelectClipRgn(hdc, global.sectorRegion);
+				GetClipBox(hdc, &clipbox);
+				//PRINTF("sector : %2d,%2d %2d,%2d\n", global.sector.left, global.sector.top, global.sector.right, global.sector.bottom);
+				//PRINTF("clipbox: %2d,%2d %2d,%2d\n", clipbox.left, clipbox.top, clipbox.right, clipbox.bottom);
+				if (clipbox.bottom < global.sector.top)
+					goto LpaintText;
+
+				SelectClipRgn(hdc, global.sectorRegion);
 
 			r = ROW(global.ulcorner);
 			c = COL(global.ulcorner);
@@ -675,37 +679,37 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 			{
 				int y;
 
-				y = global.sector.top + (j - r) * dy - global.offsety;
-				if (y >= clipbox.bottom ||
-					  y + dy < clipbox.top)
-					continue;
+					y = global.sector.top + (j - r) * dy - global.offsety;
+					if (y >= clipbox.bottom ||
+					y + dy < clipbox.top)
+						continue ;
 
-				for (i = c; i < cmax; i++)
-				{
-					loc_t loc = j * (Mcolmx + 1) + i;
-					HANDLE h;
-					int x;
+					for (i = c; i < cmax; i++)
+					{
+						loc_t loc = j * (Mcolmx + 1) + i;
+						HANDLE h;
+						int x;
 
-					x =  (i - c) * dx - global.offsetx;
-					if (x >= clipbox.right ||
+						x =  (i - c) * dx - global.offsetx;
+						if (x >= clipbox.right ||
 						x + dx < clipbox.left)
-						continue;
+							continue ;
 
-					h = global.mapvaltab[global.map[loc]];
-					if ((j % 10) == 0 && (i % 10) == 0 &&
-						  global.map[loc] == 0)
-						h = global.unknown10;
-					mode = SRCCOPY;
+						h = global.mapvaltab[global.map[loc]];
+						if ((j % 10) == 0 && (i % 10) == 0 &&
+						global.map[loc] == 0)
+							h = global.unknown10;
+						mode = SRCCOPY;
 
-					if (/+global.player.num == plynum
+						if (/+global.player.num == plynum
 						  &&+/ loc == global.cursor
-						  && global.cursor > LOC_LASTMAGIC
-						  //&& !global.player.display.cursorHidden
-						  && global.player.mode != mdSURV) {
-						/+debug (hilite) MessageBoxA(hwnd,
+						&& global.cursor > LOC_LASTMAGIC
+						//&& !global.player.display.cursorHidden
+						&& global.player.mode != mdSURV) {
+							/+debug (hilite) MessageBoxA(hwnd,
 						  format("Cursor %d, %d", r, c), "Debug", MB_OK);+/
-						mode = NOTSRCCOPY;
-					}
+							mode = NOTSRCCOPY;
+						}
 
 					DrawBitmap(hdc, x, y, h,
 					   global.scalex, global.scaley, mode);
@@ -722,11 +726,11 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 			  = CreatePen(PS_SOLID, dx/3+2, RGB(255, 0, 0));
 			SelectObject(hdc, borderPen);
 
-			MoveToEx(hdc, x1, y1, null);
-			LineTo(hdc, x2, y1);
-			LineTo(hdc, x2, y2);
-			LineTo(hdc, x1, y2);
-			LineTo(hdc, x1, y1);
+					MoveToEx(hdc, x1, y1, null);
+					LineTo(hdc, x2, y1);
+					LineTo(hdc, x2, y2);
+					LineTo(hdc, x1, y2);
+					LineTo(hdc, x1, y1);
 
 			SelectObject(hdc, global.dashedPen);
 			DeleteObject(borderPen);
@@ -738,125 +742,125 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 				DrawBitmap(hdc, global.blastx, global.blasty, global.hBlast, 1.0, 1.0, SRCPAINT);
 			}
 
-			// Do the survey mode graphic
-			if (global.player && global.player.mode == mdSURV)
-			{
-				HPEN hPen;
-				int x1s, y1s, x2s, y2s;
-				int cursorx, cursory;
+				// Do the survey mode graphic
+				if (global.player && global.player.mode == mdSURV)
+				{
+					HPEN hPen;
+					int x1s, y1s, x2s, y2s;
+					int cursorx, cursory;
 
-				cursorx = LocToX(global.player.curloc);
-				cursory = LocToY(global.player.curloc);
+					cursorx = LocToX(global.player.curloc);
+					cursory = LocToY(global.player.curloc);
 
-				x1s = 0;
-				y1s = cursory;
-				x2s = cursorx - dx/2;
-				y2s = y1s;
-				MoveToEx(hdc, x1s, y1s, null);
-				LineTo(hdc, x2s, y2s);
+					x1s = 0;
+					y1s = cursory;
+					x2s = cursorx - dx/2;
+					y2s = y1s;
+					MoveToEx(hdc, x1s, y1s, null);
+					LineTo(hdc, x2s, y2s);
 
-				x1s = x2s + dx;
-				x2s = global.pixelx;
-				MoveToEx(hdc, x1s, y1s, null);
-				LineTo(hdc, x2s, y2s);
+					x1s = x2s + dx;
+					x2s = global.pixelx;
+					MoveToEx(hdc, x1s, y1s, null);
+					LineTo(hdc, x2s, y2s);
 
-				x1s = cursorx;
-				y1s = 40;
-				x2s = x1s;
-				y2s = cursory - dy/2;
-				MoveToEx(hdc, x1s, y1s, null);
-				LineTo(hdc, x2s, y2s);
+					x1s = cursorx;
+					y1s = 40;
+					x2s = x1s;
+					y2s = cursory - dy/2;
+					MoveToEx(hdc, x1s, y1s, null);
+					LineTo(hdc, x2s, y2s);
 
-				y1s = y2s + dy;
-				y2s = 40 + global.pixely;
-				MoveToEx(hdc, x1s, y1s, null);
-				LineTo(hdc, x2s, y2s);
-			}
+					y1s = y2s + dy;
+					y2s = 40 + global.pixely;
+					MoveToEx(hdc, x1s, y1s, null);
+					LineTo(hdc, x2s, y2s);
+				}
 
-			// Do the direction mode graphic
-			if (global.player && global.player.mode == mdDIR)
-			{
-				HPEN hPen;
-				int x1s, y1s, x2s, y2s;
-				int cursorx, cursory;
+				// Do the direction mode graphic
+				if (global.player && global.player.mode == mdDIR)
+				{
+					HPEN hPen;
+					int x1s, y1s, x2s, y2s;
+					int cursorx, cursory;
 
-				cursorx = LocToX(global.player.curloc);
-				cursory = LocToY(global.player.curloc);
+					cursorx = LocToX(global.player.curloc);
+					cursory = LocToY(global.player.curloc);
 
-				/* -O */
-				x1s = cursorx - dx/2 - 2 * dx;
-				x2s = cursorx - dx/2;
-				y1s = y2s = cursory;
-				MoveToEx(hdc, x1s, y1s, null);
-				LineTo(hdc, x2s, y2s);
+					/* -O */
+					x1s = cursorx - dx/2 - 2 * dx;
+					x2s = cursorx - dx/2;
+					y1s = y2s = cursory;
+					MoveToEx(hdc, x1s, y1s, null);
+					LineTo(hdc, x2s, y2s);
 
-				/* \
+					/* \
 				 *  O
 				 */
-				y1s -= 2 * dy + dy/2;
-				y2s -= dy/2;
-				MoveToEx(hdc, x1s, y1s, null);
-				LineTo(hdc, x2s, y2s);
+					y1s -= 2 * dy + dy/2;
+					y2s -= dy/2;
+					MoveToEx(hdc, x1s, y1s, null);
+					LineTo(hdc, x2s, y2s);
 
-				/*  O
+					/*  O
 				 * /
 				 */
-				y1s += dy * 5;
-				y2s += dy;
-				MoveToEx(hdc, x1s, y1s, null);
-				LineTo(hdc, x2s, y2s);
+					y1s += dy * 5;
+					y2s += dy;
+					MoveToEx(hdc, x1s, y1s, null);
+					LineTo(hdc, x2s, y2s);
 
-				/*  O
+					/*  O
 				 *  |
 				 */
-				x1s = x2s = cursorx;
-				MoveToEx(hdc, x1s, y1s, null);
-				LineTo(hdc, x2s, y2s);
+					x1s = x2s = cursorx;
+					MoveToEx(hdc, x1s, y1s, null);
+					LineTo(hdc, x2s, y2s);
 
-				/*  O
+					/*  O
 				 *   \
 				 */
-				x1s += (dx - dx/2) + 2 * dx;
-				x2s += (dx - dx/2);
-				MoveToEx(hdc, x1s, y1s, null);
-				LineTo(hdc, x2s, y2s);
+					x1s += (dx - dx/2) + 2 * dx;
+					x2s += (dx - dx/2);
+					MoveToEx(hdc, x1s, y1s, null);
+					LineTo(hdc, x2s, y2s);
 
-				/*  O- */
-				y1s = y2s = cursory;
-				MoveToEx(hdc, x1s, y1s, null);
-				LineTo(hdc, x2s, y2s);
+					/*  O- */
+					y1s = y2s = cursory;
+					MoveToEx(hdc, x1s, y1s, null);
+					LineTo(hdc, x2s, y2s);
 
-				/*   /
+					/*   /
 				 *  O
 				 */
-				y1s -= dy/2 + 2 * dy;
-				y2s -= dy/2;
-				MoveToEx(hdc, x1s, y1s, null);
-				LineTo(hdc, x2s, y2s);
+					y1s -= dy/2 + 2 * dy;
+					y2s -= dy/2;
+					MoveToEx(hdc, x1s, y1s, null);
+					LineTo(hdc, x2s, y2s);
 
-				/*  |
+					/*  |
 				 *  O
 				 */
-				x1s = x2s = cursorx;
-				MoveToEx(hdc, x1s, y1s, null);
-				LineTo(hdc, x2s, y2s);
-			}
+					x1s = x2s = cursorx;
+					MoveToEx(hdc, x1s, y1s, null);
+					LineTo(hdc, x2s, y2s);
+				}
 
-			// Do the move mode graphic
-			if (global.player && global.player.mode == mdTO)
-			{
-				HPEN hPen;
-				int x1s, y1s, x2s, y2s;
-
-				x1s = LocToX(global.player.frmloc);
-				y1s = LocToY(global.player.frmloc);
-				x2s = LocToX(global.player.curloc);
-				y2s = LocToY(global.player.curloc);
-				MoveToEx(hdc, x1s, y1s, null);
-				if (x1s != x2s && y1s != y2s)
+				// Do the move mode graphic
+				if (global.player && global.player.mode == mdTO)
 				{
-					int x, y;
-					int ax, ay;
+					HPEN hPen;
+					int x1s, y1s, x2s, y2s;
+
+					x1s = LocToX(global.player.frmloc);
+					y1s = LocToY(global.player.frmloc);
+					x2s = LocToX(global.player.curloc);
+					y2s = LocToY(global.player.curloc);
+					MoveToEx(hdc, x1s, y1s, null);
+					if (x1s != x2s && y1s != y2s)
+					{
+						int x, y;
+						int ax, ay;
 
 					ax = abs(x1s - x2s);
 					ay = abs(y1s - y2s);
@@ -881,18 +885,18 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 				LineTo(hdc, x2s, y2s);
 			}
 
-			  LpaintText:
-			if (clipbox.bottom > global.text.top &&
+				LpaintText:
+				if (clipbox.bottom > global.text.top &&
 				clipbox.top < global.text.bottom)
-			{
-				// Do the text box
-				SelectClipRgn(hdc, global.textRegion);
+				{
+					// Do the text box
+					SelectClipRgn(hdc, global.textRegion);
 
-				// Fill background
-				FillRect(hdc, &global.text, GetStockObject(WHITE_BRUSH));
+					// Fill background
+					FillRect(hdc, &global.text, GetStockObject(WHITE_BRUSH));
 
-				int col2 = global.text.right * 2 / 3;
-				int col3 = global.text.right * 5 / 6;
+					int col2 = global.text.right * 2 / 3;
+					int col3 = global.text.right * 5 / 6;
 
 				SelectObject(hdc, global.hFont);
 				StatusPanel sp = global.player.display.panel;
@@ -908,44 +912,47 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 			}
 		}
 
-		EndPaint (hwnd, &ps);
-		//PRINTF("-WM_PAINT\n");
-		return 0;
+			EndPaint (hwnd, &ps);
+			//PRINTF("-WM_PAINT\n");
+			return 0;
 
-	case WM_CLOSE:
-		if (promptSave(hwnd)) DestroyWindow(hwnd);
-		return 0;
+			case WM_CLOSE:
+			if (promptSave(hwnd)) DestroyWindow(hwnd);
+			return 0;
 
-	case WM_QUERYENDSESSION:
-		return promptSave(hwnd);
+			case WM_QUERYENDSESSION:
+			return promptSave(hwnd);
 
-	case WM_DESTROY:
+			case WM_DESTROY:
 
-		for (i = 0; i < MAPMAX; i++)
-		{
-			if (global.mapvaltab[i])
-				DeleteObject(global.mapvaltab[i]);
+			for (i = 0; i < MAPMAX; i++)
+			{
+				if (global.mapvaltab[i])
+					DeleteObject(global.mapvaltab[i]);
+			}
+
+			DeleteObject(global.unknown10);
+			DeleteObject(global.hBlast);
+			DeleteObject(global.hBlastmask);
+			DeleteObject(global.hSplash);
+			DeleteObject(global.hCursor);
+			DeleteObject(global.hFont);
+			DeleteObject(global.sectorRegion);
+			DeleteObject(global.textRegion);
+
+			hdc = GetDC(hwnd);
+			SelectObject(hdc, global.originalPen);
+			ReleaseDC(hwnd, hdc);
+			DeleteObject(global.dashedPen);
+
+			PostQuitMessage (0);
+			return 0;
+
+			default:
+			break ;
 		}
-
-		DeleteObject(global.unknown10);
-		DeleteObject(global.hBlast);
-		DeleteObject(global.hBlastmask);
-		DeleteObject(global.hSplash);
-		DeleteObject(global.hCursor);
-		DeleteObject(global.hFont);
-		DeleteObject(global.sectorRegion);
-		DeleteObject(global.textRegion);
-
-		hdc = GetDC(hwnd);
-		SelectObject(hdc, global.originalPen);
-		ReleaseDC(hwnd, hdc);
-		DeleteObject(global.dashedPen);
-
-		PostQuitMessage (0);
-		return 0;
-
-	default:
-		break;
+	}
+	catch (Exception ignored) {
 	}
 	return DefWindowProcA(hwnd, message, wParam, lParam);
 }
@@ -1012,7 +1019,7 @@ bool promptSave(HWND hwnd) {
  */
 
 extern (Windows) BOOL AboutDlgProc (HWND hDlg, uint message, uint wParam,
-					                                           LONG lParam)
+					                                           LONG lParam) nothrow
 {
 	switch (message)
 	{
@@ -1040,7 +1047,7 @@ extern (Windows) BOOL AboutDlgProc (HWND hDlg, uint message, uint wParam,
  */
 
 extern (Windows) BOOL CitySelectDlgProc(HWND hDlg, uint message, uint wParam,
-					                                           LONG lParam)
+					                                           LONG lParam) nothrow
 {
 	static HWND hSensor;
 	static HWND hTile;
@@ -1053,30 +1060,31 @@ extern (Windows) BOOL CitySelectDlgProc(HWND hDlg, uint message, uint wParam,
 	double scalex, scaley;
 	int i, j;
 
-	switch (message)
-	{
-	case WM_INITDIALOG:
+	try {
+		switch (message)
+		{
+			case WM_INITDIALOG:
 
-		global.newphase = global.phase;
-		CheckRadioButton(hDlg, IDD_ARMIES, IDD_BATTLESHIPS, global.newphase);
+			global.newphase = global.phase;
+			CheckRadioButton(hDlg, IDD_ARMIES, IDD_BATTLESHIPS, global.newphase);
 
-		hSensor = GetDlgItem(hDlg, IDD_SENSOR);
-		hTile = GetDlgItem(hDlg, IDD_TILE);
+			hSensor = GetDlgItem(hDlg, IDD_SENSOR);
+			hTile = GetDlgItem(hDlg, IDD_TILE);
 
-		SetFocus(GetDlgItem(hDlg, global.newphase));
+			SetFocus(GetDlgItem(hDlg, global.newphase));
 			return true;
 
-		case WM_COMMAND:
+			case WM_COMMAND:
 			switch (wParam)
 			{
 				case IDOK:
-					global.phase = global.newphase;
-							EndDialog (hDlg, true);
-					return true;
+				global.phase = global.newphase;
+				EndDialog (hDlg, true);
+				return true;
 
 				case IDCANCEL:
-							EndDialog (hDlg, false);
-					return true;
+				EndDialog (hDlg, false);
+				return true;
 
 				case IDD_ARMIES:
 				case IDD_FIGHTERS:
@@ -1086,82 +1094,84 @@ extern (Windows) BOOL CitySelectDlgProc(HWND hDlg, uint message, uint wParam,
 				case IDD_CRUISERS:
 				case IDD_CARRIERS:
 				case IDD_BATTLESHIPS:
-					global.newphase = wParam;
-					CheckRadioButton(hDlg, IDD_ARMIES, IDD_BATTLESHIPS, global.newphase);
-					result = true;
-					goto LpaintTile;
+				global.newphase = wParam;
+				CheckRadioButton(hDlg, IDD_ARMIES, IDD_BATTLESHIPS, global.newphase);
+				result = true;
+				goto LpaintTile;
 
 				default:
-					break;
+				break ;
 			}
-			break;
+			break ;
 
-	case WM_PAINT:
+			case WM_PAINT:
 
-		// Sensor probe
-		InvalidateRect(hSensor, null, true);
-		UpdateWindow(hSensor);
+			// Sensor probe
+			InvalidateRect(hSensor, null, true);
+			UpdateWindow(hSensor);
 
-		hDC = GetDC(hSensor);
-		GetClientRect(hSensor, &rect);
+			hDC = GetDC(hSensor);
+			GetClientRect(hSensor, &rect);
 
-		r = ROW(global.cursor) - 2;
-		if (r < 0)
-		r = 0;
-		if (r + 5 > Mrowmx)
-		r = Mrowmx - 5;
-		c = COL(global.cursor) - 2;
-		if (c < 0)
-		c = 0;
-		if (c + 5 > Mcolmx)
-		c = Mcolmx - 5;
+			r = ROW(global.cursor) - 2;
+			if (r < 0)
+				r = 0;
+			if (r + 5 > Mrowmx)
+				r = Mrowmx - 5;
+			c = COL(global.cursor) - 2;
+			if (c < 0)
+				c = 0;
+			if (c + 5 > Mcolmx)
+				c = Mcolmx - 5;
 
-		dx = (rect.right - rect.left) / 5;
-		dy = (rect.bottom - rect.top) / 5;
-		scalex = dx / cast(double) 10;
-		scaley = dy / cast(double) 10;
+			dx = (rect.right - rect.left) / 5;
+			dy = (rect.bottom - rect.top) / 5;
+			scalex = dx / cast(double) 10;
+			scaley = dy / cast(double) 10;
 
-		for (j = 0; j < 5; j++)
-		{
-			for (i = 0; i < 5; i++)
+			for (j = 0; j < 5; j++)
 			{
-				loc_t loc = (r + j) * (Mcolmx + 1) + (c + i);
-				HANDLE h = global.mapvaltab[global.map[loc]];
+				for (i = 0; i < 5; i++)
+				{
+					loc_t loc = (r + j) * (Mcolmx + 1) + (c + i);
+					HANDLE h = global.mapvaltab[global.map[loc]];
 
 				DrawBitmap(hDC, rect.left + i * dx, rect.top + j * dy,
 				h, scalex, scaley, SRCCOPY);
 			}
 		}
 
-		ReleaseDC(hSensor, hDC);
+			ReleaseDC(hSensor, hDC);
 
-	LpaintTile:
-		// Sample Tile
+			LpaintTile:
+			// Sample Tile
 
-		InvalidateRect(hTile, null, true);
-		UpdateWindow(hTile);
+			InvalidateRect(hTile, null, true);
+			UpdateWindow(hTile);
 
-		hDC = GetDC(hTile);
-		GetClientRect(hTile, &rect);
+			hDC = GetDC(hTile);
+			GetClientRect(hTile, &rect);
 
-		dx = rect.right - rect.left;
-		dy = rect.bottom - rect.top;
-		scalex = dx / cast(double) 10;
-		scaley = dy / cast(double) 10;
+			dx = rect.right - rect.left;
+			dy = rect.bottom - rect.top;
+			scalex = dx / cast(double) 10;
+			scaley = dy / cast(double) 10;
 
-		{
-			int ab = global.newphase - IDD_ARMIES;
-			HANDLE h = global.mapvaltab[ab + ((ab <= F) ? 5 : 6)];
+			{
+				int ab = global.newphase - IDD_ARMIES;
+				HANDLE h = global.mapvaltab[ab + ((ab <= F) ? 5 : 6)];
 
 			DrawBitmap(hDC, rect.left, rect.top,
 				h, scalex, scaley, SRCCOPY);
+			}
+
+			ReleaseDC(hTile, hDC);
+			break ;
+
+			default:
+			break ;
 		}
-
-		ReleaseDC(hTile, hDC);
-		break;
-
-	default:
-		break;
+	}  catch (Exception ignored) {
 	}
 	return result;
 }
