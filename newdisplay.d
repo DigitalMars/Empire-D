@@ -16,7 +16,7 @@
  */
 
 import core.sys.windows.windows;
-import core.stdc.time;
+import core.thread; // for sleep()
 import std.string;
 
 import empire;
@@ -577,7 +577,8 @@ class NewDisplay {
 	void delay(int n)
 	{
 		if (panel.isActive && timeinterval != 0) {
-			sleep(n * timeinterval);
+			//sleep(n * timeinterval);
+			Thread.sleep( dur!("msecs")( n * timeinterval ) );
 		}
 	}
 

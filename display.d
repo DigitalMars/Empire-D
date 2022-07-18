@@ -17,7 +17,9 @@
 
 
 import core.stdc.stdlib;
-import core.stdc.time;
+import core.thread; // for sleep()
+import std.string;
+import core.sys.windows.windows;
 
 import empire;
 import eplayer;
@@ -912,7 +914,8 @@ deprecated struct Display
 		{
 			text.flush();
 			if (timeinterval)
-				sleep(n * timeinterval);
+				//sleep(n * timeinterval);
+				Thread.sleep( dur!("msecs")( n * timeinterval ) );
 		}
 	}
 
