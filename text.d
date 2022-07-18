@@ -327,7 +327,7 @@ struct Text
 	/****************************
 	 * Formatted print.
 	 */
-	void vsmes(string fmt, ...)
+	void vsmes(string fmt)
 	{
 		//char[100] buffer;
 		//int count;
@@ -335,8 +335,8 @@ struct Text
 		//count = _vsnprintf(buffer.ptr,buffer.sizeof,format,cast(va_list)(&format + 1));
 		//smes(buffer);
 
-		string buffer = format(fmt, _argptr, _arguments);
-		smes(buffer);
+		//string buffer = format(fmt, _argptr, _arguments);
+		smes(fmt);
 	}
 
 	/****************************
@@ -382,12 +382,12 @@ struct Text
 
 	void locprt(loc_t loc)
 	{
-		vsmes("%u,%u",ROW(loc),COL(loc));
+		vsmes(format("%u,%u",ROW(loc),COL(loc)));
 	}
 
 	void locdot(loc_t loc)
 	{
-		vsmes("%u,%u.",ROW(loc),COL(loc));
+		vsmes(format("%u,%u.",ROW(loc),COL(loc)));
 		deleol();
 	}
 

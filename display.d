@@ -219,7 +219,7 @@ struct Display
 		if (t.watch)
 		{
 			t.TTcurs(text.DS(2));
-			t.vsmes("City under attack at %u,%u.",ROW(loc),COL(loc));
+			t.vsmes(format("City under attack at %u,%u.",ROW(loc),COL(loc)));
 			t.deleol();				// delete to end of line
 			sound_subjugate();
 			t.cmes(text.DS(3),"Enemy invasion repelled.\1\2");
@@ -238,7 +238,7 @@ struct Display
 		if (t.watch)
 		{
 			t.TTcurs(text.DS(2));
-			t.vsmes("City is under attack at %u,%u.",ROW(loc),COL(loc));
+			t.vsmes(format("City is under attack at %u,%u.",ROW(loc),COL(loc)));
 			t.deleol();				// delete to end of line
 			sound_crushed();
 			t.cmes(text.DS(3),"Your city was conquered!\1\2");
@@ -310,7 +310,7 @@ struct Display
 		if (t.watch)
 		{
 			t.curs(text.DS(3));
-			t.vsmes("%d %.*s destroyed.",num, nmes_p(type,num));
+			t.vsmes(format("%d %.*s destroyed.",num, nmes_p(type,num)));
 			t.deleol();
 			delay(3);
 		}
@@ -327,7 +327,7 @@ struct Display
 		if (t.watch)
 		{
 			t.curs(text.DS(2));
-			t.vsmes("Your ship is overloaded at %u,%u.",ROW(loc),COL(loc));
+			t.vsmes(format("Your ship is overloaded at %u,%u.",ROW(loc),COL(loc)));
 			t.deleol();
 			killml(typabd,numdes);		// print message
 			sound_aground();
@@ -445,7 +445,7 @@ struct Display
 		if (t.watch)
 		{
 			t.curs(text.DS(1));
-			t.vsmes("Landing confirmed at %u,%u.",ROW(u.loc),COL(u.loc));
+			t.vsmes(format("Landing confirmed at %u,%u.",ROW(u.loc),COL(u.loc)));
 			t.deleol();
 			delay(2);
 		}
@@ -458,7 +458,7 @@ struct Display
 		if (t.watch)
 		{
 			t.curs(text.DS(1));
-			t.vsmes("Boarding confirmed at %u,%u.",ROW(u.loc),COL(u.loc));
+			t.vsmes(format("Boarding confirmed at %u,%u.",ROW(u.loc),COL(u.loc)));
 			t.deleol();
 			delay(2);
 		}
@@ -500,7 +500,7 @@ struct Display
 			{
 				t.curs(text.DS(1));
 				your();
-				t.vsmes("%.*s marched into the sea and drowned!",nmes_p(A,1));
+				t.vsmes(format("%.*s marched into the sea and drowned!",nmes_p(A,1)));
 				t.imes("\1\2");
 			}
 			sound_splash();
@@ -691,8 +691,8 @@ struct Display
 		{
 			t.curs(text.DS(0));
 			string p = (c.phs == A || c.phs == C) ? "n" : "";
-			t.vsmes("City at %u,%u has completed a%s %.*s.",
-					ROW(c.loc),COL(c.loc),p,nmes_p(c.phs,1));
+			t.vsmes(format("City at %u,%u has completed a%s %.*s.",
+					ROW(c.loc),COL(c.loc),p,nmes_p(c.phs,1)));
 			t.imes("\1\2");
 		}
 	}
@@ -941,9 +941,9 @@ void typcit(Player* p, City* c)
 			if (c.phs == -1)
 				return ;        // invalid city phase
 			text.cmes(text.DS(1),text.narrow ? "Prod: " : "Producing: ");
-			text.vsmes("%.*s Completion: %d",d.nmes_p(c.phs,2),c.fnd);
+			text.vsmes(format("%.*s Completion: %d",d.nmes_p(c.phs,2),c.fnd));
 			if (p.human && c.fipath)
-				text.vsmes(" Fipath: %u,%u",ROW(c.fipath),COL(c.fipath));
+				text.vsmes(format(" Fipath: %u,%u",ROW(c.fipath),COL(c.fipath)));
 			text.deleol();
 		}
 	}

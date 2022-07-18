@@ -4028,16 +4028,16 @@ struct Player
 				if (p == &this)				// if it's this player
 				{
 					if (co40)
-						t.vsmes("Yr: %s",s);
+						t.vsmes(format("Yr: %s",s));
 					else
-						t.vsmes("Your  : %s",s);
+						t.vsmes(format("Your  : %s",s));
 				}
 				else
 				{
 					if (co40)
-						t.vsmes("P%d: %s",i,s);
+						t.vsmes(format("P%d: %s",i,s));
 					else
-						t.vsmes("Plyr %d: %s",i,s);
+						t.vsmes(format("Plyr %d: %s",i,s));
 				}
 			}
 			else
