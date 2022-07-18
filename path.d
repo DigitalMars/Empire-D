@@ -115,7 +115,7 @@ bool path(
 	loc_t beg,   // beginning
 	loc_t end,   // end
 	int dir,     // direction to turn in obstacle
-	bool* ok,    // array of ok map values
+	bool[] ok,    // array of ok map values
 	dir_t* pr2,  // pointer to initial move
 	bool opt)    // if true then optimize
 in
@@ -158,10 +158,16 @@ do
     bool mapinm() { return ok[*(mapb+loc)] || loc==end; }
 
     // Same as armain(), but trymov is given.
-    bool armap() { return (loc=curloc+arrow(trymov)), mapinm(); }
+    bool armap() {
+		loc=curloc+arrow(trymov);
+		return mapinm();
+	}
 
     // See if we can move from curloc to end. Set trymov and loc
-    bool armain() { return (trymov=movdir(curloc, end)), armap(); }
+    bool armain() {
+		trymov=movdir(curloc, end);
+		return armap();
+	}
 
 	// initialize
 

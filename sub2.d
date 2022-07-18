@@ -63,8 +63,8 @@ in
 }
 do
 {
-	int i;
-	Unit* u;
+	//int i;
+	//Unit* u;
 
 	/+for (i = 0; i < UNIMAX; i++)
 	{
@@ -86,16 +86,16 @@ do
 		}
 	}+/
 
-	foreach (int i, inout Unit u; unit) {
+	foreach (int i, ref Unit u; unit) {
 		if (!u.loc) {
 			if (i >= unitop)
 				unitop = i + 1;		// set unitop to 1 past max uninum
 			//memset(u, 0, Unit.sizeof);
 			u = Unit.init;
 			u.loc = loc;
-			u.own = pn;
-			u.typ = ty;
-			u.hit = typx[ty].hittab;
+			u.own = cast(ubyte) pn;
+			u.typ = cast(ubyte) ty;
+			u.hit = cast(ubyte) typx[ty].hittab;
 			u.dir = (i & 1) ? 1 : -1;
 			pu = &u;			// return unit # created
 			return true;		// successful

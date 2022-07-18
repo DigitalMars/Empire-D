@@ -24,6 +24,7 @@ import maps;
 import var;
 import sub2;
 import std.string;
+import std.conv;
 version (Windows) {
 	import winmain, newdisplay;
 	debug (tslice) import core.sys.windows.windows;
@@ -112,7 +113,7 @@ struct Player
 	do {
 		int i;
 		Unit* u;
-		Player* p = this;
+		Player* p = &this;	// this method iterates through all players.
 
 		if (!p.human)
 		{
@@ -226,11 +227,11 @@ struct Player
 		if (!human)                          // if computer player
 			cityph();                        // adjust city phases as req'd
 		display.remove_sticky();             // remove any 'sticky' messages
-		hrdprd(this);                        // hardware production
+		hrdprd(&this);                        // hardware production
 		chkwin();                            // see if anybody won
 		round++;                             // next round
 		for (int i = 1; i <= numply; i++)
-			Player.get(i).notify_round(this, round);  // type out the round #
+			Player.get(i).notify_round(&this, round);  // type out the round #
 		//display.text.flush();
 	}
 
@@ -343,7 +344,7 @@ struct Player
 					if (.typ[ab] != C)
 					{
 						// if F landing on a carrier
-						u.hit = typx[F].hittab;  // reset range of F
+						u.hit = cast(ubyte) typx[F].hittab;  // reset range of F
 						d.landing(u);
 						eomove(u.loc);
 					}
@@ -392,7 +393,7 @@ struct Player
 				if (.own[ac] == num)             // if the city is ours
 				{
 					// land the plane
-					u.hit = typx[F].hittab;      // reset range of F
+					u.hit = cast(ubyte) typx[F].hittab;      // reset range of F
 					d.landing(u);
 					eomove(u.loc);
 				}
@@ -445,13 +446,13 @@ struct Player
 				return false;                    // if fighter has moved 4
 			break;
 
-		case T:
-		case C:
+		case T, C:
 			drag(u);                             // drag along As and Fs
-		case D:
-		case S:
-		case R:
-		case B:
+			if (turns ||                         // if already got extra move
+			      u.hit <= typx[type].hittab/2)  // or half damaged
+				return false;
+			break;
+		case D, S, R, B:
 			if (turns ||                         // if already got extra move
 				  u.hit <= typx[type].hittab/2)  // or half damaged
 				return false;
@@ -459,7 +460,7 @@ struct Player
 		}
 
 		if (.typ[ac] == X)                       // if in city
-		return false;                            // then no extra moves
+					return false; 				 // then no extra moves
 		turns++;                                 // # of turns completed
 		return true;                             // get another move
 	}
@@ -472,7 +473,7 @@ struct Player
 	void attcit(loc_t loc)
 	{
 		int ab = .map[loc];
-		Player* patt = this;
+		Player* patt = &this;
 		Player* pdef = Player.get(own[ab]);
 		City* c;
 
@@ -493,9 +494,9 @@ struct Player
 			assert(c.own == pdef.num);
 			mapval = 4 + 10 * (patt.num - 1);  // map val of conquered city
 			assert(.own[mapval] == patt.num);
-			.map[loc] = mapval;                // set reference map
+			.map[loc] = cast(ubyte) mapval;                // set reference map
 			snsflg = c.own;                    // !=0 if do sensor for enemy
-			c.own = patt.num;                  // set new owner
+			c.own = cast(ubyte) patt.num;                  // set new owner
 
 			// Destroy any enemy pieces in the city.
 
@@ -547,7 +548,7 @@ struct Player
 
 		if (loc == d.secbas)
 			return;                // this sector is already showing
-		global.player = this;
+		global.player = &this;	// todo this is very strange trick
 		global.ulcorner = loc;
 		global.map = map;
 		global.offsetx = 0;
@@ -662,8 +663,8 @@ struct Player
 		while (!loc ||                   // if city doesn't exist or
 			edger(loc) == 8 ||           // island city or
 			c.own);                      // already owned
-		c.own = num;                     // claim the city
-		.map[loc] = 4 + (num - 1) * 10;  // set map value
+		c.own = cast(ubyte) num;                     // claim the city
+		.map[loc] = cast(ubyte) (4 + (num - 1) * 10);  // set map value
 		sensor(loc);                     // do a sensor probe
 		if (human)                       // if human player
 			phasin(c);                   // get city phase
@@ -800,6 +801,8 @@ struct Player
 			goto cmderr;                  // no defaults!
 		case 3:
 			done(1);
+			goto LSP;
+		LSP:
 		case ' ':                         // stay put
 			*pr2 = -1;
 			if (mode == mdMOVE)
@@ -812,7 +815,8 @@ struct Player
 			cmderror();
 			break;
 		case 'F':                         // from
-			cmdF(u); break;
+			cmdF(u);
+			break;
 		case 'G':                         // goto nearest city/carrier
 			if (cmdG(u))
 				goto bhmove;              // if ifo and ila were changed
@@ -1204,14 +1208,14 @@ struct Player
 		if (mode != mdMOVE)     // then look at visible piece
 		{
 			Unit* ui = fnduni(curloc);
-			ui.ifo = ifo;
+			ui.ifo = cast(ubyte) ifo;
 			ui.ila = ila;
 			display.headng(ui);
 			return false;
 		}
 		else                      // else in mdMOVE
 		{
-			u.ifo = ifo;
+			u.ifo = cast(ubyte) ifo;
 			u.ila = ila;
 			display.headng(u);  // type out new heading
 			return true;
@@ -1257,7 +1261,7 @@ struct Player
 		if (mode != newmod)						// if it is a new mode
 		{
 			version (Windows) {
-				static char[][] modmsg =
+				static string[] modmsg =
 				[
 					null,
 					"Move",
@@ -1267,10 +1271,10 @@ struct Player
 					"City Prod"
 				];
 
-				display.panel[2] = modmsg[newmod];
+				display.panel[2] = modmsg[newmod].dup;
 				display.panel[3] = null;
 			} else {
-				static char*[] modmsg =
+				static string[] modmsg =
 				[
 					"		 \1",
 					"Move	 \1",
@@ -1320,9 +1324,9 @@ struct Player
 		{
 			if (typ[ab] == X)           // if it's a city
 				version (Windows) {
-					NewDisplay.typcit(this, fndcit(loc));
+					NewDisplay.typcit(&this, fndcit(loc));
 				} else {
-					typcit(this, fndcit(loc));
+					typcit(&this, fndcit(loc));
 				}
 			else                        // else it's a unit
 				display.headng(fnduni(loc));
@@ -1595,14 +1599,14 @@ struct Player
 
 		version (Windows)
 		{
-			NewDisplay.typcit(this, c);  // type out data on city
+			NewDisplay.typcit(&this, c);  // type out data on city
 			display.pcur(loc);           // position cursor
 			//t.flush();
 			i = dialogCitySelect(c.phs);
 			ab = typx[i].unichr;
-			c.phs = i;                // set city phase
+			c.phs = cast(byte) i;                // set city phase
 			c.fnd = round + typx[i].phstart;
-			NewDisplay.typcit(this, c);
+			NewDisplay.typcit(&this, c);
 		}
 		else
 		{
@@ -1624,7 +1628,7 @@ struct Player
 			t.output(ab);             // echo
 			c.phs = i;                // set city phase
 			c.fnd = round + typx[i].phstart;
-			typcit(this, c);
+			typcit(&this, c);
 		}
 		display.delay(1);
 	}
@@ -2183,7 +2187,7 @@ struct Player
 			break;
 		default:
 			version (Windows) {
-				display.panel[2] = format("ifo:%d", u.ifo);
+				display.panel[2] = format("ifo:%d", u.ifo).dup;
 			} else {
 				display.text.cmes(display.text.DS(2),"ifo:");
 				display.text.decprt(u.ifo);
@@ -3402,9 +3406,9 @@ struct Player
 				d.headng(u);
 			} else if (c) {
 				version (Windows) {
-					NewDisplay.typcit(this, c);
+					NewDisplay.typcit(&this, c);
 				} else {
-					typcit(this, c);
+					typcit(&this, c);
 				}
 			}
 			d.pcur(curloc);
@@ -3496,7 +3500,7 @@ struct Player
 		int i;                               // city number
 		loc_t loc;
 		int edge;                            // # of seas around city
-		Player* p = this;
+		Player* p = &this;
 
 		p.cityct();                          // bring city vars up to date
 		for (i = CITMAX; i--;)               // loop thru cities
@@ -3638,7 +3642,7 @@ struct Player
 		while (j >= D)
 		{
 			if (numphs[j] <= numphs[j + 1])
-				c.phs = j;  // priority to cheaper ships
+				c.phs = cast(byte) j;  // priority to cheaper ships
 			j--;
 		}
 		if (!numphs[C])     // if nobody making Cs
@@ -3661,7 +3665,8 @@ struct Player
 		int j;
 		uint* pl;
 
-		pl = loci;                   // pl . start of loci array
+		// todo change to normal iteration through array
+		pl = loci.ptr;                   // pl . start of loci array
 		for (j = LOCMAX; j--; pl++)
 		{
 			if (!*pl) continue;      // no loci
@@ -3889,7 +3894,7 @@ struct Player
 		}
 		do
 		{
-			return path.path(this, beg, end, dir, ok, pr2, true);
+			return path.path(&this, beg, end, dir, ok, pr2, true);
 		}
 
 	int pathn(loc_t beg, loc_t end, int dir, bool[] ok, dir_t* pr2)
@@ -3900,7 +3905,7 @@ struct Player
 		}
 		do
 		{
-			return path.path(this,beg,end,dir,ok,pr2,false);
+			return path.path(&this,beg,end,dir,ok,pr2,false);
 		}
 
 	// Notify player that things have happened
@@ -3916,7 +3921,7 @@ struct Player
 		{
 			int plysave;
 			int i;
-			char[] s;
+			string s;
 			//char[r.sizeof * 3 + 1] buf;
 			//Text* t = &display.text;
 			StatusPanel sp = display.panel;
@@ -3931,7 +3936,7 @@ struct Player
 				s = "lost";
 			else
 			{
-				s = toString(r);
+				s = to!string(r);
 				//sprintf(buf, "%d", r);
 				//s = buf;
 			}
@@ -3940,13 +3945,13 @@ struct Player
 			{+/
 				//t.curs((i - 1) << 8);
 
-				if (p == this)				// if it's this player
+				if (p == &this)				// if it's this player
 				{
-					sp[i+3] = "Your  : " ~ s;
+					sp[i+3] = ("Your  : " ~ s).dup;
 				}
 				else
 				{
-					sp[i+3] = format("Plyr %d: %s", i, s);
+					sp[i+3] = format("Plyr %d: %s", i, s).dup;
 				}
 			/+}
 			else
@@ -3961,8 +3966,9 @@ struct Player
 			int plysave;
 			int i;
 			int co40;
-			char* s;
-			char[r.sizeof * 3 + 1] buf;
+			//char* s;
+			string s;
+			//char[r.sizeof * 3 + 1] buf;
 			Text* t = &display.text;
 
 			if (!watch)
@@ -3978,8 +3984,9 @@ struct Player
 				s = "lost";
 			else
 			{
-				sprintf(buf, "%d", r);
-				s = buf;
+				//sprintf(buf, "%d", r);
+				//s = buf;
+				s = to!string(r);
 			}
 
 			if (r <= 1 || co40 || watch == DAwindows)
@@ -3989,7 +3996,7 @@ struct Player
 				else
 					t.curs((i - 1) << 8);
 
-				if (p == this)				// if it's this player
+				if (p == &this)				// if it's this player
 				{
 					if (co40)
 						t.vsmes("Yr: %s",s);
@@ -4019,7 +4026,7 @@ struct Player
 
 	void notify_defeated(Player* p)
 	{
-		if (p == this)               // if this means you
+		if (p == &this)               // if this means you
 			display.lost();          // then you lost
 		else
 			display.plyrcrushed(p);  // someone else lost
@@ -4084,7 +4091,7 @@ struct Player
 		numdes = 0,                  // number destroyed
 		nummax = u.hit;              // max # allowed
 		int i;
-		Player* p = this;
+		Player* p = &this;
 		version (Windows) {
 			NewDisplay d = p.display;
 		} else {
@@ -4144,7 +4151,7 @@ struct Player
 		type += 5 + 10 * (num - 1);  // offset to army
 		if (ac == MAPsea)            // if moving onto sea
 			type++;                  // offset for two Fs
-		.map[loc] = type;            // update reference map
+		.map[loc] = cast(ubyte) type;// update reference map
 	}
 
 	void killit(Unit* u)             // kill the unit
@@ -4210,7 +4217,7 @@ struct Player
 					Hwin = Hdef;
 
 					pwin = pdef;
-					plos = this;
+					plos = &this;
 					break;
 				}
 			}
@@ -4223,7 +4230,7 @@ struct Player
 					ulos = udef;
 					Hwin = Hatt;
 
-					pwin = this;
+					pwin = &this;
 					plos = pdef;
 					break;
 				}
@@ -4231,7 +4238,7 @@ struct Player
 		}
 
 		if (uwin.typ >= D)
-			uwin.hit = Hwin;
+			uwin.hit = cast(ubyte) Hwin;
 
 		pdef.display.underattack(udef);
 
@@ -4342,9 +4349,10 @@ struct Player
 		} else {
 			Display* d;
 		}
-		int w;
+		ubyte w;
+		int w1;
 
-		if (p != this)
+		if (p != &this)
 		{
 			d = display;
 			display = p.display;
@@ -4354,9 +4362,9 @@ struct Player
 			watch = p.watch;
 			p.watch = w;
 
-			w = secflg;
+			w1 = secflg;
 			secflg = p.secflg;
-			p.secflg = w;
+			p.secflg = w1;
 
 			repaint();
 			p.repaint();

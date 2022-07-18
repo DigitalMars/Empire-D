@@ -147,7 +147,7 @@ struct Global
 	int blastx;
 	int blasty;         // location of blast
 
-	bit dirty;          // game state has changed since save?
+	bool dirty;          // game state has changed since save?
 	char bufferedKey;   // buffered gameplay keystroke
 }
 
@@ -278,13 +278,13 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 			global.pixelx = 120;
 			global.pixely = 120;
 
-		global.hwnd = hwnd;
-		global.scalex = 1.0;
-		global.scaley = 1.0;
-		global.numplayers = IDD_FOUR;
-		global.map = .map;
-		global.offsetx = 0;
-		global.offsety = 0;
+			global.hwnd = hwnd;
+			global.scalex = 1.0;
+			global.scaley = 1.0;
+			global.numplayers = IDD_FOUR;
+			global.map = .map.ptr;
+			global.offsetx = 0;
+			global.offsety = 0;
 
 			// Clipping rectangles
 			global.text.left = 0;
@@ -547,14 +547,14 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 					 */
 						global.dirty = true;
 
-					//p.display.text.TTunget(ch);
-					global.bufferedKey = ch;
-					break;
+						//p.display.text.TTunget(ch);
+						global.bufferedKey = cast(char) ch;
+						break ;
+					}
 				}
+				break ;
 			}
-			break;
-		}
-		return 0;
+			return 0;
 
 			case WM_KEYDOWN:
 			switch (wParam)
@@ -902,19 +902,19 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 					int col2 = global.text.right * 2 / 3;
 					int col3 = global.text.right * 5 / 6;
 
-				SelectObject(hdc, global.hFont);
-				StatusPanel sp = global.player.display.panel;
-				for (i = 0; i < 4; i++)
-				{
-					//TextOutA(hdc, 0, global.cyChar * i, vbuffer[i], strlen(vbuffer[i]));
-					TextOutA(hdc, 0, global.cyChar * i, sp[i], sp[i].length);
-					TextOutA(hdc, col2, global.cyChar * i,
-					  sp[i | 4], sp[i | 4].length);
-					TextOutA(hdc, col3, global.cyChar * i,
-					  sp[i | 8], sp[i | 8].length);
+					SelectObject(hdc, global.hFont);
+					StatusPanel sp = global.player.display.panel;
+					for (i = 0; i < 4; i++)
+					{
+						//TextOutA(hdc, 0, global.cyChar * i, vbuffer[i], strlen(vbuffer[i]));
+						TextOutA(hdc, 0, global.cyChar * i, sp[i].ptr, sp[i].length);
+						TextOutA(hdc, col2, global.cyChar * i,
+						sp[i | 4].ptr, sp[i | 4].length);
+						TextOutA(hdc, col3, global.cyChar * i,
+						sp[i | 8].ptr, sp[i | 8].length);
+					}
 				}
 			}
-		}
 
 			EndPaint (hwnd, &ps);
 			//PRINTF("-WM_PAINT\n");
@@ -1000,9 +1000,9 @@ bool save(HWND hwnd, bool saveAs) {
 bool promptSave(HWND hwnd) {
 	if (!global.dirty) return true;
 
-	char[] message = (global.sfn.lpstrFile[0] == '\0') ?
+	string message = (global.sfn.lpstrFile[0] == '\0') ?
 	  "Save game?" :
-	  "Save changes to " ~ toString(global.sfn.lpstrFile) ~ "?\0";
+	  "Save changes to " ~ to!string(global.sfn.lpstrFile) ~ "?\0";
 
 	final switch (MessageBoxA(hwnd, message.ptr,
 		  "Game has changed", MB_ICONQUESTION | MB_YESNOCANCEL)) {
@@ -1140,10 +1140,10 @@ extern (Windows) BOOL CitySelectDlgProc(HWND hDlg, uint message, uint wParam,
 					loc_t loc = (r + j) * (Mcolmx + 1) + (c + i);
 					HANDLE h = global.mapvaltab[global.map[loc]];
 
-				DrawBitmap(hDC, rect.left + i * dx, rect.top + j * dy,
-				h, scalex, scaley, SRCCOPY);
+					DrawBitmap(hDC, cast(short)(rect.left + i * dx), cast(short)(rect.top + j * dy),
+					h, scalex, scaley, SRCCOPY);
+				}
 			}
-		}
 
 			ReleaseDC(hSensor, hDC);
 
@@ -1165,7 +1165,7 @@ extern (Windows) BOOL CitySelectDlgProc(HWND hDlg, uint message, uint wParam,
 				int ab = global.newphase - IDD_ARMIES;
 				HANDLE h = global.mapvaltab[ab + ((ab <= F) ? 5 : 6)];
 
-			DrawBitmap(hDC, rect.left, rect.top,
+				DrawBitmap(hDC, cast(short)rect.left, cast(short)rect.top,
 				h, scalex, scaley, SRCCOPY);
 			}
 
@@ -1208,7 +1208,7 @@ int dialogCitySelect(int oldphase)
  */
 
 extern (Windows) BOOL InitDlgProc (HWND hDlg, uint message, uint wParam,
-					                                           LONG lParam)
+					                                           LONG lParam) nothrow
 {
 	switch (message)
 	{
@@ -1401,7 +1401,7 @@ void winSetup()
 		//d.initialize();
 
 		p.num = plynum;
-		p.map = (plynum == 0) ? .map : new ubyte[MAPSIZE];
+		p.map = ((plynum == 0) ? .map : new ubyte[MAPSIZE]).ptr;
 		p.human = (plynum == 1 && !global.demo);
 		p.watch = DAnone;
 
@@ -1769,7 +1769,7 @@ void ShowBlast(int state, loc_t loc)
  * Retrieve a buffered keystroke and clear it
  */
 char getKeystroke() {
-	char key = std.ctype.toupper(global.bufferedKey);
+	char key = peekKeystroke();
 	global.bufferedKey = char.init;
 	return key;
 }
@@ -1779,5 +1779,6 @@ char getKeystroke() {
  * Retrieve a buffered keystroke without clearing it
  */
 char peekKeystroke() {
-	return std.ctype.toupper(global.bufferedKey);
+	// toUpper() turns char.init (==255) 376 and then cast(char) turns it into 120 == ('x')
+	return global.bufferedKey == char.init ? char.init : cast(char) toUpper(global.bufferedKey);
 }

@@ -343,8 +343,8 @@ deprecated struct Display
 		Text* t = &text;
 		//char* y;
 		//char buffer[100];
-		char[] y;
-		char[] buffer;
+		string y;
+		string buffer;
 
 		if (!t.watch)
 			return;
@@ -398,14 +398,14 @@ deprecated struct Display
 	 * Type out unit message, plural or singular
 	 */
 
-	char[] nmes_p(int type,int num)
+	string nmes_p(int type,int num)
 	in
 	{
 		assert(0 <= type && type < TYPMAX);
 	}
 	do
 	{
-		static char[][2][8] msg =
+		static string[2][8] msg =
 		[
 			[ "army",             "armies"            ],
 			[ "fighter",          "fighters"          ],
@@ -580,8 +580,8 @@ deprecated struct Display
 
 	void battle(Player* p, Unit* uwin, Unit* ulos)
 	{
-		char[] p1;
-		char[] p2;
+		string p1;
+		string p2;
 		Text* t = &text;
 
 		if (t.watch)
@@ -631,7 +631,7 @@ deprecated struct Display
 	/*************************************
 	 */
 
-	char[] youene_p(Player* p,int num)
+	string youene_p(Player* p,int num)
 	{
 		if (p.num == num)
 		{
@@ -688,10 +688,8 @@ deprecated struct Display
 		Text* t = &text;
 		if (t.watch)
 		{
-			char* p;
-
 			t.curs(text.DS(0));
-			p = (c.phs == A || c.phs == C) ? "n" : "";
+			string p = (c.phs == A || c.phs == C) ? "n" : "";
 			t.vsmes("City at %u,%u has completed a%s %.*s.",
 					ROW(c.loc),COL(c.loc),p,nmes_p(c.phs,1));
 			t.imes("\1\2");
@@ -878,7 +876,7 @@ deprecated struct Display
 
 	void valcmd(int mode)
 	{
-		static char*[] valmsg =
+		static string[] valmsg =
 		[
 			"valcmd()",                       // just a place holder
 			"QWEADZXC,FGHIKLNRSUVY<>,space",  // Move
@@ -887,13 +885,13 @@ deprecated struct Display
 			"QWEADZXC,HKNT<>,esc",            // From To
 			"AFDTSRCB"                        // City Prod
 		];
-		Text* t = &text;
+		//Text* t = &text;
 
-		t.curs(text.DS(3));
+		text.curs(text.DS(3));
 		if (!text.narrow)
-			t.smes("Valid commands: ");
-		t.smes(valmsg[mode]);
-		t.deleol();
+			text.smes("Valid commands: ");
+		text.smes(valmsg[mode]);
+		text.deleol();
 		sound_error();
 	}
 
@@ -932,18 +930,21 @@ deprecated struct Display
 
 void typcit(Player* p, City* c)
 {
-	//Display* d = p.display;
-	Text* t = &text;
+	version (Windows) {}
+	else {
+		Display* d = p.display;
+		Text* text= d.text;
 
-	if (t.watch)
-	{
-		if (c.phs == -1)
-			return;		// invalid city phase
-		t.cmes(t.DS(1),t.narrow ? "Prod: " : "Producing: ");
-		t.vsmes("%.*s Completion: %d",nmes_p(c.phs,2),c.fnd);
-		if (p.human && c.fipath)
-			t.vsmes(" Fipath: %u,%u",ROW(c.fipath),COL(c.fipath));
-		t.deleol();
+		if (text.watch)
+		{
+			if (c.phs == -1)
+				return ;        // invalid city phase
+			text.cmes(text.DS(1),text.narrow ? "Prod: " : "Producing: ");
+			text.vsmes("%.*s Completion: %d",nmes_p(c.phs,2),c.fnd);
+			if (p.human && c.fipath)
+				text.vsmes(" Fipath: %u,%u",ROW(c.fipath),COL(c.fipath));
+			text.deleol();
+		}
 	}
 }
 
@@ -953,16 +954,19 @@ void typcit(Player* p, City* c)
 
 void savgam()
 {
-	Text* t = &var.player[plynum].display.text;
+	version (Windows) {}
+	else {
+		Text* t = &(var.player[plynum].display.text);
 
-	t.cmes(t.DS(3),"Saving game...\1");
-	if (var_savgam("empire.dat"))
-	{
-		t.cmes(t.DS(3),"Error writing EMPIRE.DAT\1");
-	}
-	else
-	{
-		t.cmes(t.DS(3),"Game saved.\1");
+		t.cmes(t.DS(3),"Saving game...\1");
+		if (var_savgam("empire.dat"))
+		{
+			t.cmes(t.DS(3),"Error writing EMPIRE.DAT\1");
+		}
+		else
+		{
+			t.cmes(t.DS(3),"Game saved.\1");
+		}
 	}
 }
 
@@ -972,57 +976,60 @@ void savgam()
 
 void lstvar()
 {
-	int i,j,k,ene;
-	Player* p = Player.get(2);
-	Text* t = &p.display.text;
+	version (Windows) {}
+	else {
+		int i,j,k,ene;
+		Player* p = Player.get(2);
+		Text* t = &(p.display.text);
 
-	ene = 2;                            // get computer player number
-	p.display.clrsec();                 // clear section of screen
+		ene = 2;                            // get computer player number
+		p.display.clrsec();                 // clear section of screen
 
-	t.cmes(0x500,"TARGET\t");
-	for (i = 0; i < CITMAX; i++)        // loop thru cities
-	{
-		if (p.target[i])                // if it's a target
+		t.cmes(0x500,"TARGET\t");
+		for (i = 0; i < CITMAX; i++)        // loop thru cities
 		{
-			t.locprt(city[i].loc);
+			if (p.target[i])                // if it's a target
+			{
+				t.locprt(city[i].loc);
+				t.output('\t');
+			}
+		}
+
+		t.cmes(0x600,"NUMUNI\t");
+		for (i = 0; i < 8; i++)
+		{
+			t.decprt(p.numuni[i]);
 			t.output('\t');
 		}
-	}
 
-	t.cmes(0x600,"NUMUNI\t");
-	for (i = 0; i < 8; i++)
-	{
-		t.decprt(p.numuni[i]);
-		t.output('\t');
-	}
-
-	t.cmes(0x700,"NUMPHS\t");
-	for (i = 0; i < 8; i++)
-	{
-		t.decprt(p.numphs[i]);
-		t.output('\t');
-	}
-
-	t.curs(0x800);
-	t.smes("NUMOWN "); t.decprt(p.numown);
-	t.smes(" NUMTAR "); t.decprt(p.numtar);
-
-	t.imes("\n\rTROOPT\n\r");
-	for (i = 0; i < 6; i++)
-	{
-		for (k = 0; k < 5; k++)
+		t.cmes(0x700,"NUMPHS\t");
+		for (i = 0; i < 8; i++)
 		{
-			t.locprt( p.troopt[i][k] );
+			t.decprt(p.numphs[i]);
+			t.output('\t');
+		}
+
+		t.curs(0x800);
+		t.smes("NUMOWN "); t.decprt(p.numown);
+		t.smes(" NUMTAR "); t.decprt(p.numtar);
+
+		t.imes("\n\rTROOPT\n\r");
+		for (i = 0; i < 6; i++)
+		{
+			for (k = 0; k < 5; k++)
+			{
+				t.locprt(p.troopt[i][k] );
+				t.output('\t');
+			}
+			t.crlf();
+		}
+
+		t.imes("LOCI\n\r");
+		for (i = 0; i < LOCMAX; i++)
+		{
+			t.locprt(p.loci[i] );
 			t.output('\t');
 		}
 		t.crlf();
 	}
-
-	t.imes("LOCI\n\r");
-	for (i = 0; i < LOCMAX; i++)
-	{
-		t.locprt( p.loci[i] );
-		t.output('\t');
-	}
-	t.crlf();
 }

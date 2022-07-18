@@ -19,7 +19,7 @@
 module text;
 
 import core.stdc.stdio;
-import core.stdc.ctype;
+import std.string;
 
 import empire;
 import printf;
@@ -164,7 +164,7 @@ deprecated struct Text
 		c = inbuf;
 		inbuf = -1;
 
-		return std.ctype.toupper(cast(dchar)c);
+		return toUpper(c);
 	}
 
 	void TTunget(int c)		// put character c in input
@@ -203,7 +203,7 @@ deprecated struct Text
 		r = rc >> 8;
 		c = rc & 0xFF;			// get row & column in r,c
 		if (!(r <= (Tmax >> 8) && c <= (Tmax & 0xFF)))
-			PRINTF("r = %d, c = %d, Tmax = %d,%d\n", r, c, Tmax >> 8, Tmax & 0xFF);
+			PRINTF("r = %d, c = %d, Tmax = %d,%d\n".dup.ptr, r, c, Tmax >> 8, Tmax & 0xFF);
 		assert(r <= (Tmax >> 8) && c <= (Tmax & 0xFF));
 		TTcurs(rc);
 	}
@@ -295,13 +295,16 @@ deprecated struct Text
 	 * Send string to output.
 	 */
 
-	void imes(char* p)
+	void imes(string p)
 	{
 		//printf("imes('%s')\n",p);
 		if (watch)
 		{
-			while (*p)
-				output(*p++);
+			//while (*p)
+			//	output(*p++);
+			foreach (char c; p) {
+				output(c);
+			}
 			flush();
 		}
 	}
@@ -310,12 +313,12 @@ deprecated struct Text
 	 * Send string to output.
 	 */
 
-	void smes(char* p)
+	void smes(string s)
 	{
 		//printf("smes('%s')\n",p);
 		if (watch)
 		{
-			imes(p);
+			imes(s);
 		}
 	}
 
@@ -323,13 +326,15 @@ deprecated struct Text
 	/****************************
 	 * Formatted print.
 	 */
-
-	void vsmes(char* format,...)
+	void vsmes(string fmt, ...)
 	{
-		char[100] buffer;
-		int count;
+		//char[100] buffer;
+		//int count;
+		//
+		//count = _vsnprintf(buffer.ptr,buffer.sizeof,format,cast(va_list)(&format + 1));
+		//smes(buffer);
 
-		count = _vsnprintf(buffer,buffer.sizeof,format,cast(va_list)(&format + 1));
+		string buffer = format(fmt, _argptr, _arguments);
 		smes(buffer);
 	}
 
@@ -337,11 +342,11 @@ deprecated struct Text
 	 * Position cursor and type message.
 	 */
 
-	void cmes(int rc, char* p)
+	void cmes(int rc, string str)
 	{
 		if (!watch) return;
 		TTcurs(rc);
-		imes(p);
+		imes(str);
 	}
 
 
@@ -400,7 +405,7 @@ deprecated struct Text
 		if (watch)
 		{
 			curs(rc);
-			output(value);
+			output(cast(char) value);
 		}
 	}
 

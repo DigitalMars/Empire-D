@@ -27,20 +27,20 @@
 
 import core.stdc.stdio;
 import core.stdc.stdlib;
-import core.stdc.string;
+import core.stdc.string;	// for strlen
 import std.string;
 import std.file;
-import core.stdc.stdarg;
+import core.stdc.stdarg;	// tpdp try to remove
 
 const int LOG = 1;				// disable logging by setting this to 0
 
 version (Windows)
 {
-    char[] logfile = r"\empire.log";
+    const char[] logfile = r"\empire.log";
 }
 version (linux)
 {
-    char[] logfile = "/var/log/empire.log";
+	const char[] logfile = "/var/log/empire.log";
 }
 
 /*********************************************
@@ -94,7 +94,7 @@ extern (C)
 			uint psize;
 			int count;
 
-			p = buffer;
+			p = buffer.ptr;
 			psize = buffer.length;
 			for (;;)
 			{
@@ -146,7 +146,7 @@ extern (C)
 
 void _printf_assert(char* file, uint line)
 {
-	PRINTF("assert fail: %s(%d)\n", file, line);
+	PRINTF("assert fail: %s(%d)\n".dup.ptr, file, line);
 	*cast(char*) 0 = 0;		// seg fault to ensure it isn't overlooked
 	exit(0);
 }

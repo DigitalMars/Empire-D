@@ -76,7 +76,8 @@ int selmap()
 	int i,a,c,n;
 
 	j = empire.random(5);
-	d = cast(ubyte *)(*mapdata.mapdata[j]);
+	//d = cast(ubyte *)(*mapdata.mapdata[j]);
+	d = mapdata.mapdata[j].ptr;
 	i = MAPSIZE - 1;
 	while ((c = *d) != 0)				// 0 marks end of data
 	{
@@ -89,7 +90,7 @@ int selmap()
 			assert(0);
 		}
 		while (n-- >= 0)
-			map[i--] = a;
+			map[i--] = cast(ubyte) a;
 		d++;
 	}
 	if (ranq() & 4) flip();
@@ -104,7 +105,8 @@ int selmap()
 
 void flip()
 {
-	int i,j,c;
+	int i,j;
+	ubyte c;
 
 	i = j = MAPSIZE / 2;
 	while (i--)
@@ -120,7 +122,8 @@ void flip()
 
 void klip()
 {
-	int row,i,j,c;
+	int row,i,j;
+	ubyte c;
 
 	row = 0;
 	while (row < MAPSIZE)

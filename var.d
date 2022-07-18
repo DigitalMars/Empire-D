@@ -139,7 +139,7 @@ void init_var()
 			player[i].map = null;
 
 		if (player[i].display) {
-			delete player[i].display;
+			//delete player[i].display;
 			player[i].display = null;
 		}
 	}
@@ -174,7 +174,7 @@ void init_var()
  *		!=0		error
  */
 
-int var_savgam(char* filename)
+int var_savgam(const char* filename)
 {
 	FILE* fp;
 	char r;
@@ -187,16 +187,16 @@ int var_savgam(char* filename)
 	if (fwrite(&savbeg, 1, n, fp) != n)
 		goto err2;
 	n = CITMAX;
-	if (fwrite(city, City.sizeof, n, fp) != n)
+	if (fwrite(city.ptr, City.sizeof, n, fp) != n)
 		goto err2;
 	n = UNIMAX;
-	if (fwrite(unit, Unit.sizeof, n, fp) != n)
+	if (fwrite(unit.ptr, Unit.sizeof, n, fp) != n)
 		goto err2;
 	n = PLYMAX + 1;
-	if (fwrite(player, Player.sizeof, n, fp) != n)
+	if (fwrite(player.ptr, Player.sizeof, n, fp) != n)
 		goto err2;
 
-	player[0].map = .map;
+	player[0].map = .map.ptr; // todo make player.map an array?
 	for (i = 1; i <= numply; i++)
 	{
 		n = MAPSIZE;
@@ -230,20 +230,20 @@ bool resgam(FILE* fp)
 	if (fread(&savbeg, 1, n, fp) != n)
 	goto err2;
 	n = CITMAX;
-	if (fread(city, City.sizeof, n, fp) != n)
+	if (fread(city.ptr, City.sizeof, n, fp) != n)
 	goto err2;
 	n = UNIMAX;
-	if (fread(unit, Unit.sizeof, n, fp) != n)
+	if (fread(unit.ptr, Unit.sizeof, n, fp) != n)
 	goto err2;
 	n = PLYMAX + 1;
-	if (fread(player, Player.sizeof, n, fp) != n)
+	if (fread(player.ptr, Player.sizeof, n, fp) != n)
 	goto err2;
 
-	player[0].map = .map;
+	player[0].map = .map.ptr;
 	for (i = 1; i <= numply; i++)
 	{
 		n = MAPSIZE;
-		player[i].map = new ubyte[MAPSIZE];
+		player[i].map = (new ubyte[MAPSIZE]).ptr;
 		if (fread(player[i].map, map[0].sizeof, n, fp) != n)
 		goto err2;
 		player[i].usv = null;

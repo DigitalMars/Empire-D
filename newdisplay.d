@@ -28,12 +28,12 @@ import var;
 
 private {
 	struct UnitName {
-		char   abbrev;
-		char[] singular;
-		char[] plural;
-		char[] withArticle;
+		const char   abbrev;
+		string singular;
+		string plural;
+		string withArticle;
 
-		char[] sOrP(uint howMany) {
+		string sOrP(uint howMany) const {
 			return howMany == 1 ? singular : plural;
 		}
 	}
@@ -251,7 +251,7 @@ class NewDisplay {
 	void headng(Unit* u)
 	{
 		int type, abd;
-		char[] buffer;
+		string buffer;
 
 		if (u.typ == A)
 		{
@@ -358,9 +358,6 @@ class NewDisplay {
 
 	void battle(Player* p, Unit* uwin, Unit* ulos)
 	{
-		char[] p1;
-		char[] p2;
-
 		int abd;
 
 		panel[2] = format("%s%s destroyed.", youene_p(p, ulos.own),
@@ -370,8 +367,8 @@ class NewDisplay {
 			killml(tcaf(ulos), abd);
 		if (uwin.typ != A && uwin.typ != F)
 		{
-			p1 = youene_p(p,uwin.own);
-			p2 = unitName[uwin.typ].singular;
+			string p1 = youene_p(p,uwin.own);
+			string p2 = unitName[uwin.typ].singular;
 			if (uwin.hit == 1) {
 				panel[3] = format("%s%s has 1 hit left", p1, p2);
 			} else {
@@ -399,7 +396,7 @@ class NewDisplay {
 	/*************************************
 	 */
 
-	char[] youene_p(Player* p,int num)
+	string youene_p(Player* p,int num)
 	{
 		return (p.num == num) ? "Your " : "Enemy ";
 	}
@@ -450,7 +447,7 @@ class NewDisplay {
 
 		if (p.human)						// if human player
 		{
-			char[] buffer;
+			string buffer;
 			if (u.ifo != fnAW)
 				buffer = "Function: ";
 			final switch (u.ifo)
@@ -552,7 +549,7 @@ class NewDisplay {
 
 	void valcmd(int mode)
 	{
-		static const char[][] valmsg =
+		static string[] valmsg =
 		[
 			"valcmd()",                       // just a place holder
 			"QWEADZXC,FGHIKLNRSUVY<>,space",  // Move
@@ -599,8 +596,7 @@ class NewDisplay {
 			if (c.phs == -1)
 				return;		// invalid city phase
 
-			char[] buffer = format("Producing: %s Completion: %d",
-			  unitName[c.phs].plural, c.fnd);
+			string buffer = format("Producing: %s Completion: %d", unitName[c.phs].plural, c.fnd);
 			if (p.human && c.fipath) {
 				buffer ~= format(" Fipath: %s", locToString(c.fipath));
 			}
@@ -627,7 +623,7 @@ class NewDisplay {
 			}
 		}
 
-		char[] locToString(loc_t loc) {
+		string locToString(loc_t loc) {
 			return format("%d,%d", ROW(loc), COL(loc));
 		}
 	}
@@ -643,12 +639,12 @@ class NewDisplay {
 
 class StatusPanel {
 	public {
-		char[] opIndex(uint i) {
+		string opIndex(uint i) {
 			// no need to dup it - Empire never modifies it after retrieval
 			return displayLine[i];
 		}
 
-		char[] opIndexAssign(char[] line, uint i) {
+		string opIndexAssign(string line, uint i) {
 			// no need to dup it - Empire never modifies it after setting
 			displayLine[i] = line;
 			if (isActive) refresh();
@@ -668,6 +664,6 @@ class StatusPanel {
 	}
 
 	private {
-		char[][12] displayLine;
+		string[12] displayLine;
 	}
 }
