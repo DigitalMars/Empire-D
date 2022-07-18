@@ -992,7 +992,7 @@ bool promptSave(HWND hwnd) {
 	  "Save game?" :
 	  "Save changes to " ~ toString(global.sfn.lpstrFile) ~ "?\0";
 
-	switch (MessageBoxA(hwnd, message,
+	final switch (MessageBoxA(hwnd, message.ptr,
 		  "Game has changed", MB_ICONQUESTION | MB_YESNOCANCEL)) {
 		case IDYES:
 			return save(hwnd, false);
@@ -1019,7 +1019,7 @@ extern (Windows) BOOL AboutDlgProc (HWND hDlg, uint message, uint wParam,
 			return true;
 
 		case WM_COMMAND:
-			switch (wParam)
+			final switch (wParam)
 			{
 				case IDOK:
 				case IDCANCEL:

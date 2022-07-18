@@ -453,7 +453,7 @@ class NewDisplay {
 			char[] buffer;
 			if (u.ifo != fnAW)
 				buffer = "Function: ";
-			switch (u.ifo)
+			final switch (u.ifo)
 			{
 				case fnAW:
 					//t.smes("None");
