@@ -866,28 +866,28 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 						int x, y;
 						int ax, ay;
 
-					ax = abs(x1s - x2s);
-					ay = abs(y1s - y2s);
-					if (ax < ay)
-					{
-						x = x2s;
-						if (y1s < y2s)
-						y = y1s + ax;
+						ax = maps.abs(x1s - x2s);
+						ay = maps.abs(y1s - y2s);
+						if (ax < ay)
+						{
+							x = x2s;
+							if (y1s < y2s)
+								y = y1s + ax;
+							else
+								y = y1s - ax;
+						}
 						else
-						y = y1s - ax;
+						{
+							if (x1s < x2s)
+								x = x1s + ay;
+							else
+								x = x1s - ay;
+							y = y2s;
+						}
+						LineTo(hdc, x, y);
 					}
-					else
-					{
-						if (x1s < x2s)
-						x = x1s + ay;
-						else
-						x = x1s - ay;
-						y = y2s;
-					}
-					LineTo(hdc, x, y);
+					LineTo(hdc, x2s, y2s);
 				}
-				LineTo(hdc, x2s, y2s);
-			}
 
 				LpaintText:
 				if (clipbox.bottom > global.text.top &&
