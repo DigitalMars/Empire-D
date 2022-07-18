@@ -655,29 +655,30 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 
 				SelectClipRgn(hdc, global.sectorRegion);
 
-			r = ROW(global.ulcorner);
-			c = COL(global.ulcorner);
-			int rmax, cmax;
-			dx = cast(int)(10 * global.scalex);
-			dy = cast(int)(10 * global.scaley);
-			rmax = r + (global.offsety + global.pixely + dy - 1) / dy;
-			cmax = c + (global.offsetx + global.pixelx + dx - 1) / dx;
-			if (rmax > Mrowmx)
-				rmax = Mrowmx + 1;
-			if (cmax > Mcolmx)
-				cmax = Mcolmx + 1;
-			debug (hilite) {
-				static loc_t lastCursor;
-				if (global.cursor != lastCursor) {
-					MessageBoxA(hwnd, format("Cursor %d, %d",
-					  ROW(global.cursor), COL(global.cursor)), "Debug",
-					  MB_OK);
-					lastCursor = global.cursor;
+				r = ROW(global.ulcorner);
+				c = COL(global.ulcorner);
+				{
+				int rmax, cmax;
+				dx = cast(int)(10 * global.scalex);
+				dy = cast(int)(10 * global.scaley);
+				rmax = r + (global.offsety + global.pixely + dy - 1) / dy;
+				cmax = c + (global.offsetx + global.pixelx + dx - 1) / dx;
+				if (rmax > Mrowmx)
+					rmax = Mrowmx + 1;
+				if (cmax > Mcolmx)
+					cmax = Mcolmx + 1;
+				debug (hilite) {
+					static loc_t lastCursor;
+					if (global.cursor != lastCursor) {
+						MessageBoxA(hwnd, format("Cursor %d, %d",
+						ROW(global.cursor), COL(global.cursor)), "Debug",
+						MB_OK);
+						lastCursor = global.cursor;
+					}
 				}
-			}
-			for (j = r; j < rmax; j++)
-			{
-				int y;
+				for (j = r; j < rmax; j++)
+				{
+					int y;
 
 					y = global.sector.top + (j - r) * dy - global.offsety;
 					if (y >= clipbox.bottom ||
@@ -711,20 +712,21 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 							mode = NOTSRCCOPY;
 						}
 
-					DrawBitmap(hdc, x, y, h,
-					   global.scalex, global.scaley, mode);
+						DrawBitmap(hdc, cast(short)x, cast(short)y, h,
+						global.scalex, global.scaley, mode);
+					}
 				}
 			}
-
-			// Draw a rectangle around the map edge
-			int x1,y1,x2,y2;
-			x1 = -c * dx - global.offsetx;
-			y1 = 40 - r * dx - global.offsety;
-			x2 = x1 + (Mcolmx + 1) * dx - 1;
-			y2 = y1 + (Mrowmx + 1) * dy - 1;
-			HPEN borderPen
-			  = CreatePen(PS_SOLID, dx/3+2, RGB(255, 0, 0));
-			SelectObject(hdc, borderPen);
+				// Draw a rectangle around the map edge
+				{
+				int x1,y1,x2,y2;
+				x1 = -c * dx - global.offsetx;
+				y1 = 40 - r * dx - global.offsety;
+				x2 = x1 + (Mcolmx + 1) * dx - 1;
+				y2 = y1 + (Mrowmx + 1) * dy - 1;
+				{
+					HPEN borderPen = CreatePen(PS_SOLID, dx/3+2, RGB(255, 0, 0));
+					SelectObject(hdc, borderPen);
 
 					MoveToEx(hdc, x1, y1, null);
 					LineTo(hdc, x2, y1);
@@ -732,15 +734,17 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 					LineTo(hdc, x1, y2);
 					LineTo(hdc, x1, y1);
 
-			SelectObject(hdc, global.dashedPen);
-			DeleteObject(borderPen);
+					SelectObject(hdc, global.dashedPen);
+					DeleteObject(borderPen);
+				}
+				}
 
-			// Do the blast graphic
-			if (global.blastState)
-			{
-				DrawBitmap(hdc, global.blastx, global.blasty, global.hBlastmask, 1.0, 1.0, SRCAND);
-				DrawBitmap(hdc, global.blastx, global.blasty, global.hBlast, 1.0, 1.0, SRCPAINT);
-			}
+				// Do the blast graphic
+				if (global.blastState)
+				{
+					DrawBitmap(hdc, cast(short)global.blastx, cast(short)global.blasty, global.hBlastmask, 1.0, 1.0, SRCAND);
+					DrawBitmap(hdc, cast(short)global.blastx, cast(short)global.blasty, global.hBlast, 1.0, 1.0, SRCPAINT);
+				}
 
 				// Do the survey mode graphic
 				if (global.player && global.player.mode == mdSURV)
