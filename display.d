@@ -310,7 +310,7 @@ struct Display
 		if (t.watch)
 		{
 			t.curs(text.DS(3));
-			t.vsmes(format("%d %.*s destroyed.",num, nmes_p(type,num)));
+			t.vsmes(format("%d %s destroyed.",num, nmes_p(type,num)));
 			t.deleol();
 			delay(3);
 		}
@@ -500,7 +500,7 @@ struct Display
 			{
 				t.curs(text.DS(1));
 				your();
-				t.vsmes(format("%.*s marched into the sea and drowned!",nmes_p(A,1)));
+				t.vsmes(format("%s marched into the sea and drowned!",nmes_p(A,1)));
 				t.imes("\1\2");
 			}
 			sound_splash();
@@ -691,7 +691,7 @@ struct Display
 		{
 			t.curs(text.DS(0));
 			string p = (c.phs == A || c.phs == C) ? "n" : "";
-			t.vsmes(format("City at %u,%u has completed a%s %.*s.",
+			t.vsmes(format("City at %u,%u has completed a%s %s.",
 					ROW(c.loc),COL(c.loc),p,nmes_p(c.phs,1)));
 			t.imes("\1\2");
 		}
@@ -941,7 +941,7 @@ void typcit(Player* p, City* c)
 			if (c.phs == -1)
 				return ;        // invalid city phase
 			text.cmes(text.DS(1),text.narrow ? "Prod: " : "Producing: ");
-			text.vsmes(format("%.*s Completion: %d",d.nmes_p(c.phs,2),c.fnd));
+			text.vsmes(format("%s Completion: %d",d.nmes_p(c.phs,2),c.fnd));
 			if (p.human && c.fipath)
 				text.vsmes(format(" Fipath: %u,%u",ROW(c.fipath),COL(c.fipath)));
 			text.deleol();
