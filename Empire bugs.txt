@@ -1,0 +1,34 @@
+Fixed bugs
+----------
+File _open_ dialog used to _save_ a file
+Leaks resources like crazy
+Bogus highlight at end of turn
+Need separate save/save as commands
+	Prompt to replace
+	Prompt to save on exit/new/open
+Cannot find help.txt if directory has been changed e.g. when opening/saving
+Immediately quits if cannot find help.txt
+Status display blank after restoring from minimized
+If no opponents, game doesn't respond at all (removed one-player option from UI)
+Bits of status display often out of date
+Starting a demo first thing causes AV
+Help window cannot be scrolled by dragging the slider
+
+Outstanding bugs
+----------------
+Status display blank after opening file
+Scroll bars in help window should have a page size
+Save/Save As needs to be disabled when no game is active
+Setting of dirty flag wants work
+Takes two timeslices to increment human player's turn, but only one for computer player (noticeable at beginning of the game)
+Change POV is unresponsive for more than two players
+Asking for 5 opponents, i.e. 6 players, delivers a 5-player game
+
+Interface quirks
+----------------
+Should scroll to scene of attack (?)
+Should show blast graphic when attacking cities
+
+Possible enhancements
+---------------------
+Survey with mouse

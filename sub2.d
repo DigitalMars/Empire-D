@@ -8,6 +8,7 @@
  * www.digitalmars.com.
  *
  * Written by Walter Bright.
+ * Modified by Stewart Gordon.
  * This source is written in the D Programming Language.
  * See www.digitalmars.com/d/ for the D specification and compiler.
  *
@@ -21,29 +22,31 @@ import std.string;
 
 import empire;
 import var;
+import maps;
 
 /*********************************
  * Return city number given city location.
  */
 
-City *fndcit(loc_t loc)
+City* fndcit(loc_t loc)
 in
 {
-    assert(chkloc(loc));
+	assert(chkloc(loc));
 }
-body
-{ int i;
+do
+{
+	int i;
 
-  for (i = CITMAX; i--;)
-	if (city[i].loc == loc)
-	    return &city[i];		// we found the city
-  assert(0);
-  return null;
+	for (i = CITMAX; i--;)
+		if (city[i].loc == loc)
+			return &city[i];		// we found the city
+	assert(0);
+	return null;
 }
 
 
 /*******************************
- * Create a new unit, given it's loc and type.
+ * Create a new unit, given its loc and type.
  * Output:
  *	unitop = max(unitop, uninum + 1)
  * Returns:
@@ -51,32 +54,53 @@ body
  *	false	if overpopulation
  */
 
-int newuni(Unit **pu,loc_t loc,uint ty,uint pn)
+int newuni(out Unit* pu, loc_t loc, uint ty, uint pn)
 in
 {
-    assert(chkloc(loc));
-    assert(ty < TYPMAX);
-    assert(pn <= PLYMAX);
+	assert(chkloc(loc));
+	assert(ty < TYPMAX);
+	assert(pn <= PLYMAX);
 }
-body
-{ int i;
-  Unit *u;
+do
+{
+	//int i;
+	//Unit* u;
 
-  for (i = 0; i < UNIMAX; i++)
-  {	u = &unit[i];
+	/+for (i = 0; i < UNIMAX; i++)
+	{
+		u = &unit[i];
 
-	if (!unit[i].loc)		// if unit doesn't exist
-	{   if (i >= unitop)
-		unitop = i + 1;		// set unitop to 1 past max uninum
-	    memset(u,0,Unit.sizeof);
-	    u.loc = loc;
-	    u.own = pn;
-	    u.typ = ty;
-	    u.hit = typx[ty].hittab;
-	    u.dir = (i & 1) ? 1 : -1;
-	    *pu = u;			// return unit # created
-	    return true;		// successful
+		if (!unit[i].loc)		// if unit doesn't exist
+		{
+			if (i >= unitop)
+				unitop = i + 1;		// set unitop to 1 past max uninum
+			//memset(u, 0, Unit.sizeof);
+			*u = Unit.init;
+			u.loc = loc;
+			u.own = pn;
+			u.typ = ty;
+			u.hit = typx[ty].hittab;
+			u.dir = (i & 1) ? 1 : -1;
+			*pu = u;			// return unit # created
+			return true;		// successful
+		}
+	}+/
+
+	foreach (int i, ref Unit u; unit) {
+		if (!u.loc) {
+			if (i >= unitop)
+				unitop = i + 1;		// set unitop to 1 past max uninum
+			//memset(u, 0, Unit.sizeof);
+			u = Unit.init;
+			u.loc = loc;
+			u.own = cast(ubyte) pn;
+			u.typ = cast(ubyte) ty;
+			u.hit = cast(ubyte) typx[ty].hittab;
+			u.dir = (i & 1) ? 1 : -1;
+			pu = &u;			// return unit # created
+			return true;		// successful
+		}
 	}
-  }
-  return false;				// overpopulation
+
+	return false;				// overpopulation
 }

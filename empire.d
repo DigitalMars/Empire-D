@@ -8,6 +8,7 @@
  * www.digitalmars.com.
  *
  * Written by Walter Bright.
+ * Modified by Stewart Gordon.
  * This source is written in the D Programming Language.
  * See www.digitalmars.com/d/ for the D specification and compiler.
  *
@@ -18,17 +19,32 @@ module empire;
 
 import std.random;
 
-alias int dir_t;		// direction
-alias uint loc_t;		// location
+alias dir_t = int;        // direction
+alias loc_t = uint;        // location
 
-void setran() { std.random.rand_seed(37, 49); }
-uint random(uint p) { return std.random.rand() % p; }
-uint ranq() { return std.random.rand(); }
+enum : loc_t {
+	LOC_INVALID,
+	LOC_HIDDEN,
+	LOC_LASTMAGIC = LOC_HIDDEN
+}
+
+// this method is used only in debug to make things predictable
+void setran() {
+    std.random.rndGen().seed(3749);
+    //std.random.rand_seed(37, 49);
+}
+uint random(uint p) {
+    return std.random.uniform(0, p);
+    //return std.random.rand() % p;
+}
+uint ranq() {
+    return std.random.uniform!uint;
+    //return std.random.rand();
+}
 
 const int ERRTERM	= 1;
 
-/* Definitions for typ[MAPMAX] array (X=city, J=not unit or city)
- */
+// Definitions for typ[MAPMAX] array (X=city, J=not unit or city)
 enum
 {
     J = -1,
@@ -75,7 +91,7 @@ else
 }
 
 
-/* Some ascii characters						*/
+// Some ascii characters
 enum
 {
     BEL	= 7,
@@ -89,7 +105,7 @@ enum
     DEL	= 127,
 }
 
-/* map row and column limits (0..Mrowmx,0..Mcolmx)			*/
+// map row and column limits (0..Mrowmx,0..Mcolmx)
 const uint Mrowmx	= 59;
 const int Mcolmx	= 99;
 const int MAPSIZE	= ((Mrowmx + 1) * (Mcolmx + 1));
@@ -106,8 +122,7 @@ enum
     MTterm	= 3,	// For terminals.
 }
 
-/* Some display attributes (for watch[])
- */
+// Some display attributes (for watch[])
 enum
 {
     DAnone	= 0,	// not watching this guy
@@ -124,10 +139,10 @@ enum
 
 enum
 {
-    MAPunknown	= 0,	// ' '
-    MAPcity	= 1,	// '*'
-    MAPsea	= 2,	// '.'
-    MAPland	= 3,	// '+'
+    MAPunknown	= 0, // ' '
+    MAPcity     = 1, // '*'
+    MAPsea      = 2, // '.'
+    MAPland     = 3  // '+'
 }
 
 struct City
@@ -142,10 +157,9 @@ struct City
 
     // Computer strategy
     uint round;		// turn it was captured
-};
+}
 
-/* Ifo functions (same as in hmove.c):
- */
+// Ifo functions (same as in hmove.c):
 
 enum
 {
@@ -159,24 +173,24 @@ enum
 
 enum
 {
-    IFOnone		= 0,	// no function assigned
-    IFOgotoT		= 1,	// A: go to troop transport
-    IFOdirkam		= 2,	// F: directional, kamikaze
-    IFOdir		= 3,	// directional
-    IFOtarkam		= 4,	// F: target, kamikaze
-    IFOtar		= 5,	// target location
-    IFOgotoC		= 6,	// F: goto carrier number
-    IFOcity		= 7,	// F,ships: goto city location
-    IFOdamaged		= 8,	// ships: damaged and going to port
-    IFOstation		= 9,	// C: stationed
-    IFOgstation		= 10,	// C: goto station
-    IFOcitytar		= 11,	// ships: goto city target
-    IFOescort		= 12,	// ships: escort TT number
-    IFOshipexplor	= 13,	// ships: look at unexplored territory
-    IFOloadarmy		= 14,	// T: load up armies
-    IFOacitytar		= 15,	// A: city target
-    IFOfolshore		= 16,	// A: follow shore
-    IFOonboard		= 17,	// A: on board a T
+    IFOnone       =  0,	// no function assigned
+    IFOgotoT      =  1,	// A: go to troop transport
+    IFOdirkam     =  2,	// F: directional, kamikaze
+    IFOdir        =  3,	// directional
+    IFOtarkam     =  4,	// F: target, kamikaze
+    IFOtar        =  5,	// target location
+    IFOgotoC      =  6,	// F: goto carrier number
+    IFOcity       =  7,	// F,ships: goto city location
+    IFOdamaged    =  8,	// ships: damaged and going to port
+    IFOstation    =  9,	// C: stationed
+    IFOgstation   = 10,	// C: goto station
+    IFOcitytar    = 11,	// ships: goto city target
+    IFOescort     = 12,	// ships: escort TT number
+    IFOshipexplor = 13,	// ships: look at unexplored territory
+    IFOloadarmy   = 14,	// T: load up armies
+    IFOacitytar   = 15,	// A: city target
+    IFOfolshore   = 16,	// A: follow shore
+    IFOonboard    = 17,	// A: on board a T
 }
 
 struct Unit
@@ -198,17 +212,17 @@ struct Unit
     uint abd;		// T,C: number of As (Fs) aboard (0 if not T (C))
     int dir;		// direction (1 or -1)
     int fuel;		// F:range used for strategy selection
-};
+}
 
 // Describes unit type
 struct Type
 {
-    ubyte prodtime;	// production times
-    ubyte phstart;	// starting production times
-    char unichr;	// character representation for city phase purposes
-    int hittab;		// hits left (value for F is fuel, for A is 0
-			// for computer strategy)
-};
+    ubyte prodtime;  // production times
+    ubyte phstart;   // starting production times
+    char unichr;     // character representation for city phase purposes
+    int hittab;      // hits left (value for F is fuel, for A is 0
+                     // for computer strategy)
+}
 
 enum
 {
@@ -222,5 +236,4 @@ enum
 
 
 
-/* #define DS(x)	((x)*256+18) */
-
+// #define DS(x)  ((x)*256+18)

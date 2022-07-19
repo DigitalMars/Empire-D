@@ -8,6 +8,7 @@
  * www.digitalmars.com.
  *
  * Written by Walter Bright.
+ * Modified by Stewart Gordon.
  * This source is written in the D Programming Language.
  * See www.digitalmars.com/d/ for the D specification and compiler.
  *
@@ -17,7 +18,7 @@
 
 module var;
 
-import std.c.stdio;
+import core.stdc.stdio;
 
 import empire;
 import eplayer;
@@ -26,9 +27,9 @@ import eplayer;
  * Variables not saved across game saves.
  */
 
-uint noflush = 0;			/* if non-zero then don't flush	*/
+uint noflush = 0;						// if non-zero then don't flush
 
-Type typx[TYPMAX] =
+Type[TYPMAX] typx =
 [
 	{  5, 6,'A', 0 },
 	{ 10,12,'F',20 },
@@ -42,88 +43,87 @@ Type typx[TYPMAX] =
 
 
 // These are fleshed out in init_var()
-//		     ,*,.,+,O,A,F,F,D,T,S,R,C,B
-int own [MAPMAX] = [0,0,0,0,1,1,1,1,1,1,1,1,1,1,	// etc.
-			    2,2,2,2,2,2,2,2,2,2];
-int typ [MAPMAX] = [J,X,J,J,X,A,F,F,D,T,S,R,C,B,	// etc.
-			    X,A,F,F,D,T,S,R,C,B];
-int sea [MAPMAX] = [0,0,1,0,0,0,0,1,1,1,1,1,1,1,	// etc.
-			    0,0,0,1,1,1,1,1,1,1];
-int land[MAPMAX] = [0,0,0,1,0,1,1,0,0,0,0,0,0,0,	// etc.
-			    0,1,1,0,0,0,0,0,0,0];
+//					 ,*,.,+,O,A,F,F,D,T,S,R,C,B
+int[MAPMAX] own   = [0,0,0,0,1,1,1,1,1,1,1,1,1,1,  // etc.
+                             2,2,2,2,2,2,2,2,2,2];
+int[MAPMAX] typ   = [J,X,J,J,X,A,F,F,D,T,S,R,C,B,  // etc.
+                             X,A,F,F,D,T,S,R,C,B];
+bool[MAPMAX] sea  = [0,0,1,0,0,0,0,1,1,1,1,1,1,1,  // etc.
+                             0,0,0,1,1,1,1,1,1,1];
+bool[MAPMAX] land = [0,0,0,1,0,1,1,0,0,0,0,0,0,0,  // etc.
+                             0,1,1,0,0,0,0,0,0,0];
 
-/* Mask table. Index is type (A..B).	*/
-ubyte msk[8] =	[mA,mF,mD,mT,mS,mR,mC,mB];
+// Mask table. Index is type (A..B).
+ubyte[8] msk      = [mA,mF,mD,mT,mS,mR,mC,mB];
 
 /* direction table, index is -1..7
  *
- *	qwe	3  2  1
- *	a d	4 -1  0
- *	zxc	5  6  7
+ *		qwe		3  2  1
+ *		a d		4 -1  0
+ *		zxc		5  6  7
  */
 
 int arrow(dir_t dir)
-    in
-    {
-	assert(-1 <= dir && dir <= 7);
-    }
-    body
-    {
-	static int arrow[9] =
-	    [0,1,-Mcolmx,-Mcolmx-1,-Mcolmx-2,-1,Mcolmx,Mcolmx+1,Mcolmx+2];
+	in
+	{
+		assert(-1 <= dir && dir <= 7);
+	}
+    do
+	{
+	static int[9] arrow =
+			[0,1,-Mcolmx,-Mcolmx-1,-Mcolmx-2,-1,Mcolmx,Mcolmx+1,Mcolmx+2];
 
-	return arrow[dir + 1];
-    }
+		return arrow[dir + 1];
+	}
 
-int mapgen = false;		/* true if we're running MAPGEN.EXE	*/
-int savegame = false;		/* set to true if we're to save the game */
+int mapgen = false;             // true if we're running MAPGEN.EXE
+int savegame = false;           // set to true if we're to save the game
 
 /*************************************
  * Variables saved across game saves.
  * All variables must be initialized, so they are in the same segment.
  */
 
-ubyte savbeg = 0;		/* start of variable save area		*/
-
+ubyte savbeg = 0;				// start of variable save area
 
 /*
  * Map variables
  */
 
-ubyte map[MAPSIZE] = [0,];	// reference map
-int empver = VERSION;		// version number
-//static int mapbas = 0;	// not used
+ubyte[MAPSIZE] map = [0,]; // reference map
+int empver = VERSION;      // version number
+//static int mapbas = 0;   // not used
 
-uint seedhi=0,seedlo=0;	/* seeds for random()			*/
-int overpop = false;		/* true means unit arrays are full	*/
-int tamper = false;		/* true means prog has been tampered with */
+uint seedhi=0,seedlo=0; // seeds for random()
+int overpop = false;    // true means unit arrays are full
+int tamper = false;     // true means prog has been tampered with
 
 /*
  * City variables.
  */
 
-uint cittop = 0;		/* actual number of cities		*/
-City city[CITMAX];
+uint cittop = 0;				// actual number of cities
+City[CITMAX] city;
 
 /*
  * Unit variables.
  */
 
-uint unitop = 0;		/* unitop >= topmost unit number	*/
-Unit unit[UNIMAX];
+uint unitop = 0;				// unitop >= topmost unit number
+Unit[UNIMAX] unit;
 
 /*
  * Player variables.
  */
 
-int	numply = 0,		/* default number of players playing	*/
-	plynum = 0,		/* which player is playing, 1..numply	*/
-	concede = false,	/* set to true if computer concedes game */
-	numleft = 0;		/* number of players left in the game	*/
+int	numply = 0,	  // default number of players playing
+	plynum = 0,	  // which player is playing, 1..numply
+	concede = false, // set to true if computer concedes game
+	numleft = 0;	 // number of players left in the game
 
-Player player[PLYMAX + 1];
+Player[PLYMAX + 1] player;
 
-ubyte savend = 0;		/* so we can find end of variable space	*/
+ubyte savend = 0;	// so we can find end of variable space
 
 /*************************************
  * Initialize variables.
@@ -131,124 +131,130 @@ ubyte savend = 0;		/* so we can find end of variable space	*/
 
 void init_var()
 {
-    int i,j;
+	int i,j;
 
-    for (i = 0; i < PLYMAX; i++)
-    {
-	if (i && player[i].map)
-	    free(player[i].map);
+	for (i = 0; i < PLYMAX; i++)
+	{
+		if (i && player[i].map)
+			player[i].map = null;
 
-	if (player[i].display)
-	    delete player[i].display;
-    }
-
-    memset(&savbeg, 0, &savend - &savbeg);
-    memset(city, 0, city.sizeof);
-    memset(unit, 0, unit.sizeof);
-    memset(player, 0, player.sizeof);
-
-    for (i = 1; i <= PLYMAX; i++)
-    {
-	for (j = 0; j < 10; j++)
-	{   // Fill in the etc. parts
-
-	    own [4 + (i - 1) * 10 + j] = i;
-	    typ [4 + (i - 1) * 10 + j] = typ [4 + j];
-	    sea [4 + (i - 1) * 10 + j] = sea [4 + j];
-	    land[4 + (i - 1) * 10 + j] = land[4 + j];
+		if (player[i].display) {
+			//delete player[i].display;
+			player[i].display = null;
+		}
 	}
-    }
+
+	(&savbeg)[0 .. &savend - &savbeg] = 0;
+	city[] = City.init;
+	unit[] = Unit.init;
+	player[] = Player.init;
+
+	own [4..14] = 1;
+	for (i = 2; i <= PLYMAX; i++)
+	{
+		/+for (j = 0; j < 10; j++)
+		{   // Fill in the etc. parts
+
+			own [4 + (i - 1) * 10 + j] = i;
+			typ [4 + (i - 1) * 10 + j] = typ [4 + j];
+			sea [4 + (i - 1) * 10 + j] = sea [4 + j];
+			land[4 + (i - 1) * 10 + j] = land[4 + j];
+		}+/
+		own [i*10 - 6 .. i*10 + 4] = i;
+		typ [i*10 - 6 .. i*10 + 4] = typ [4..14];
+		sea [i*10 - 6 .. i*10 + 4] = sea [4..14];
+		land[i*10 - 6 .. i*10 + 4] = land[4..14];
+	}
 }
 
 /*********************************
  * Save the game in filename.
- * Returns: 
- *	0	success
- *	!=0	error
+ * Returns:
+ *		0		success
+ *		!=0		error
  */
 
-int var_savgam(char* filename)
+int var_savgam(const char* filename)
 {
-  FILE *fp;
-  char r;
-  size_t n;
-  int i;
+	FILE* fp;
+	char r;
+	size_t n;
+	int i;
 
-  fp = fopen(filename,"wb");
-  if (fp == null) goto err;
-  n = &savend - &savbeg;
-  if (fwrite(&savbeg, 1, n, fp) != n)
-	goto err2;
-  n = CITMAX;
-  if (fwrite(city, City.sizeof, n, fp) != n)
-	goto err2;
-  n = UNIMAX;
-  if (fwrite(unit, Unit.sizeof, n, fp) != n)
-	goto err2;
-  n = PLYMAX + 1;
-  if (fwrite(player, Player.sizeof, n, fp) != n)
-	goto err2;
+	fp = fopen(filename,"wb");
+	if (fp == null) goto err;
+	n = &savend - &savbeg;
+	if (fwrite(&savbeg, 1, n, fp) != n)
+		goto err2;
+	n = CITMAX;
+	if (fwrite(city.ptr, City.sizeof, n, fp) != n)
+		goto err2;
+	n = UNIMAX;
+	if (fwrite(unit.ptr, Unit.sizeof, n, fp) != n)
+		goto err2;
+	n = PLYMAX + 1;
+	if (fwrite(player.ptr, Player.sizeof, n, fp) != n)
+		goto err2;
 
-  player[0].map = .map;
-  for (i = 1; i <= numply; i++)
-  {
-	n = MAPSIZE;
-	if (fwrite(player[i].map, map[0].sizeof, n, fp) != n)
-	    goto err2;
-  }
+	player[0].map = .map.ptr; // todo make player.map an array?
+	for (i = 1; i <= numply; i++)
+	{
+		n = MAPSIZE;
+		if (fwrite(player[i].map, map[0].sizeof, n, fp) != n)
+		goto err2;
+	}
 
-  if (fclose(fp) == -1) goto err;
-  return 0;
+	if (fclose(fp) == -1) goto err;
+	return 0;
 
-err2:
-  fclose(fp);
-err:
-  return 1;
+	err2:
+		fclose(fp);
+	err:
+		return 1;
 }
 
 
 /******************************
  * Restore game from fp.
- * Returns: 
- *	0	success
- *	!=0	error
+ * Returns:
+ *		false  success
+ *		true   error
  */
 
-int resgam(FILE* fp)
+bool resgam(FILE* fp)
 {
-  size_t n;
-  int i;
+	size_t n;
+	int i;
 
-  n = &savend - &savbeg;
-  if (fread(&savbeg, 1, n, fp) != n)
+	n = &savend - &savbeg;
+	if (fread(&savbeg, 1, n, fp) != n)
 	goto err2;
-  n = CITMAX;
-  if (fread(city, City.sizeof, n, fp) != n)
+	n = CITMAX;
+	if (fread(city.ptr, City.sizeof, n, fp) != n)
 	goto err2;
-  n = UNIMAX;
-  if (fread(unit, Unit.sizeof, n, fp) != n)
+	n = UNIMAX;
+	if (fread(unit.ptr, Unit.sizeof, n, fp) != n)
 	goto err2;
-  n = PLYMAX + 1;
-  if (fread(player, Player.sizeof, n, fp) != n)
+	n = PLYMAX + 1;
+	if (fread(player.ptr, Player.sizeof, n, fp) != n)
 	goto err2;
 
-  player[0].map = .map;
-  for (i = 1; i <= numply; i++)
-  {
-	n = MAPSIZE;
-	player[i].map = cast(ubyte *)calloc(MAPSIZE, 1);
-	if (fread(player[i].map, map[0].sizeof, n, fp) != n)
-	    goto err2;
-	player[i].usv = null;
-  }
+	player[0].map = .map.ptr;
+	for (i = 1; i <= numply; i++)
+	{
+		n = MAPSIZE;
+		player[i].map = (new ubyte[MAPSIZE]).ptr;
+		if (fread(player[i].map, map[0].sizeof, n, fp) != n)
+		goto err2;
+		player[i].usv = null;
+	}
 
-  if (fclose(fp) == -1) goto err;
+	if (fclose(fp) == -1) goto err;
 
-  return 0;
+	return false;
 
 err2:
-  fclose(fp);
+	fclose(fp);
 err:
-  return 1;
+	return true;	// false here apparently was a typo in Stewart code.
 }
-
