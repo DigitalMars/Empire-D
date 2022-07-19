@@ -41,7 +41,8 @@ char[80 + 1][5] vbuffer = [ "\0", "\0", "\0", "\0", "\0" ];
  *		Windows.
  */
 
-deprecated struct Text
+//deprecated
+struct Text
 {
 	ubyte watch;		// display attribute DAxxxx if non-zero
 	int TTtyp;			// terminal type

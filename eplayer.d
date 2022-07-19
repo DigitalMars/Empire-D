@@ -26,7 +26,13 @@ import sub2;
 import std.string;
 import std.conv;
 version (Windows) {
-	import winmain, newdisplay;
+	import winmain;
+	version (NewDisplay) {
+		import newdisplay;
+	} else {
+		import display;
+		import text;
+	}
 	debug (tslice) import core.sys.windows.windows;
 } else {
 	import display;
@@ -49,7 +55,7 @@ struct Player
 	int uninum;       // what unit number we're on
 	int secflg;       // if next unit has to be in current sector
 	ubyte defeat;     // true if player is defeated
-	version (Windows) {
+	version (NewDisplay) {
 		NewDisplay display;
 	} else {
 		Display* display;
@@ -117,7 +123,7 @@ struct Player
 
 		if (!p.human)
 		{
-			version (Windows) {
+			version (NewDisplay) {
 				char x = peekKeystroke();
 			} else {
 				int x = p.display.text.TTinr();
@@ -133,7 +139,9 @@ struct Player
 				cwatch();
 				break;+/
 			case 'O':
-				getKeystroke();
+				version (NewDisplay) {
+					getKeystroke();
+				}
 				do {
 					p = p.nextp();
 				} while (p.human);
@@ -298,7 +306,7 @@ struct Player
 		int ab = .map[loc];				         // what's there
 		int ac;
 		//Player* p = this;
-		version (Windows) {
+		version (NewDisplay) {
 			NewDisplay d = display;
 		} else {
 			Display* d = display;
@@ -531,7 +539,7 @@ struct Player
 	void sector(loc_t loc)
 	{
 		//Player* p = this;
-		version (Windows) {
+		version (NewDisplay) {
 			NewDisplay d = display;
 
 			if (!d.panel.isActive) return;
@@ -623,7 +631,7 @@ struct Player
 	{
 		int row, col, rowsize, colsize, size;
 		//Player* p = this;
-		version (Windows) {
+		version (NewDisplay) {
 			NewDisplay d = display;
 		} else {
 			Display* d = display;
@@ -694,7 +702,7 @@ struct Player
 		loc_t oldloc;
 		int cmd;
 		//Player* p = this;
-		version (Windows) {
+		version (NewDisplay) {
 			NewDisplay d = display;
 		} else {
 			Display* d = display;
@@ -715,7 +723,7 @@ struct Player
 		if (sursea(u)) return 1;          // if A on T at sea
 		if (mycode(u,pr2))                // if automatic move
 		{
-			version (Windows) {
+			version (NewDisplay) {
 			done:
 				setmode(mdNONE);
 				chksleep(u, *pr2);        // see if we put it to sleep
@@ -750,7 +758,7 @@ struct Player
 		sensor(u.loc);                    // bring map up to date
 	cmdin:
 		d.pcur(curloc);                   // position cursor
-		version (Windows) {
+		version (NewDisplay) {
 			if ((cmd = getKeystroke()) == char.init) {
 				nrdy = 1;
 				return 0;
@@ -838,7 +846,7 @@ struct Player
 		dirinp:
 			d.pcur(curloc);               // position cursor
 		dirin:
-			version (Windows) {
+			version (NewDisplay) {
 				if ((cmd = getKeystroke()) == char.init) {
 					nrdy = 2;
 					return 0;
@@ -867,7 +875,7 @@ struct Player
 				goto bhmove;              // back to beginning
 			break;
 
-		version (Windows) {
+		version (NewDisplay) {
 		} else {
 			case 'J':                     // toggle sound on/off
 				t.speaker ^= true; break;
@@ -902,7 +910,11 @@ struct Player
 		case 'V':                         // save game
 			if (mode != mdMOVE)
 				goto cmderr;              // only in move mode
-			NewDisplay.savgam();          // save game next time around
+			version(NewDisplay) {
+				NewDisplay.savgam();          // save game next time around
+			} else {
+				savgam();
+			}
 			return 0;                     // move not completed
 		case 'Y':                         // enter survey mode
 			if (mode == mdSURV)
@@ -1260,7 +1272,7 @@ struct Player
 	{
 		if (mode != newmod)						// if it is a new mode
 		{
-			version (Windows) {
+			version (NewDisplay) {
 				static string[] modmsg =
 				[
 					null,
@@ -1301,7 +1313,11 @@ struct Player
 
 	void cmderror()
 	{
-		//display.text.bell();
+
+		version (NewDisplay) {}
+		else {
+			display.text.bell();
+		}
 		display.valcmd(mode);
 	}
 
@@ -1323,7 +1339,7 @@ struct Player
 		if (own[ab] == num)             // only if it's ours
 		{
 			if (typ[ab] == X)           // if it's a city
-				version (Windows) {
+				version (NewDisplay) {
 					NewDisplay.typcit(&this, fndcit(loc));
 				} else {
 					typcit(&this, fndcit(loc));
@@ -1586,7 +1602,7 @@ struct Player
 		loc_t loc;
 		int ab, i;
 		//Player* p = this;
-		version (Windows) {
+		version (NewDisplay) {
 			//NewDisplay d = display;
 		} else {
 			Display* d = display;
@@ -1596,27 +1612,37 @@ struct Player
 		loc = c.loc;                  // city location
 		if (!display.insect(loc,2))   // if not in current sector
 			center(loc);              // center sector about city
-
-		version (Windows)
-		{
-			NewDisplay.typcit(&this, c);  // type out data on city
-			display.pcur(loc);           // position cursor
-			//t.flush();
-			i = dialogCitySelect(c.phs);
-			ab = typx[i].unichr;
-			c.phs = cast(byte) i;                // set city phase
-			c.fnd = round + typx[i].phstart;
-			NewDisplay.typcit(&this, c);
+		version (Windows) {
+			version (NewDisplay)
+			{
+				NewDisplay.typcit(&this, c);  // type out data on city
+				display.pcur(loc);           // position cursor
+				//t.flush();
+				i = dialogCitySelect(c.phs);
+				ab = typx[i].unichr;
+				c.phs = cast(byte) i;                // set city phase
+				c.fnd = round + typx[i].phstart;
+				NewDisplay.typcit(&this, c);
+			} else
+			{
+				typcit(&this, c);             // added by Stevart: type out data on city
+				display.pcur(loc);           // position cursor
+				t.flush();
+				i = dialogCitySelect(c.phs);
+				ab = typx[i].unichr;
+				c.phs = cast(byte) i;                // set city phase
+				c.fnd = round + typx[i].phstart;
+				typcit(&this, c);
+			}
 		}
 		else
 		{
-			typcit(this, c);             // added by Stevart: type out data on city
+			typcit(&this, c);             // added by Stevart: type out data on city
 			d.cityProdDemands();
 			d.pcur(loc);              // position cursor
 			while (true)
 			{
-				int c = t.TTin();
-				ab = toupper(c);      // get char from tty
+				ab = toUpper(t.TTin());      // get char from tty
 				for (i = 7; i >= 0; i--)
 					if (ab == typx[i].unichr)
 						break;
@@ -1625,8 +1651,8 @@ struct Player
 				t.bell();
 			}
 			t.curs(t.DS(0) + 25);     // where we want the prod to beg
-			t.output(ab);             // echo
-			c.phs = i;                // set city phase
+			t.output(cast(char) ab);             // echo
+			c.phs = cast(byte) i;                // set city phase
 			c.fnd = round + typx[i].phstart;
 			typcit(&this, c);
 		}
@@ -1744,7 +1770,7 @@ struct Player
 	{
 		static int c = ' ';
 		//Player* p = this;
-		version (Windows) {
+		version (NewDisplay) {
 			//NewDisplay d = display;
 		} else {
 			Display* d = display;
@@ -2186,7 +2212,7 @@ struct Player
 			r = -1;				// don't move
 			break;
 		default:
-			version (Windows) {
+			version (NewDisplay) {
 				display.panel[2] = format("ifo:%d", u.ifo).dup;
 			} else {
 				display.text.cmes(display.text.DS(2),"ifo:");
@@ -3357,7 +3383,7 @@ struct Player
 
 	void cwatch()
 	{
-		version (Windows) {
+		version (NewDisplay) {
 			NewDisplay d = display;
 		} else {
 			Display* d = display;
@@ -3405,7 +3431,7 @@ struct Player
 			if (u) {
 				d.headng(u);
 			} else if (c) {
-				version (Windows) {
+				version (NewDisplay) {
 					NewDisplay.typcit(&this, c);
 				} else {
 					typcit(&this, c);
@@ -3413,7 +3439,7 @@ struct Player
 			}
 			d.pcur(curloc);
 
-			version (Windows) {
+			version (NewDisplay) {
 				char cmd = getKeystroke();
 			} else {
 				int cmd = t.TTin();
@@ -3434,7 +3460,10 @@ struct Player
 				default:
 					if (cmdcur(&curloc, cmd, &r2))
 						break;
-					//t.bell();
+					version (NewDisplay) {}
+					else {
+						t.bell();
+					}
 					break;
 			}
 		}
@@ -3916,7 +3945,7 @@ struct Player
 	 * Notify current player that player p is now on round r.
 	 */
 
-	version (Windows) {
+	version (NewDisplay) {
 		void notify_round(Player* p, int r)
 		{
 			int plysave;
@@ -4092,7 +4121,7 @@ struct Player
 		nummax = u.hit;              // max # allowed
 		int i;
 		Player* p = &this;
-		version (Windows) {
+		version (NewDisplay) {
 			NewDisplay d = p.display;
 		} else {
 			Display* d = p.display;
@@ -4282,7 +4311,7 @@ struct Player
 		static int[] dirtab2 = [77*256, 73*256, 72*256, 71*256,  // scan codes
 							    75*256, 79*256, 80*256, 81*256];
 		//Player* p = this;
-		/+version (Windows) {
+		/+version (NewDisplay) {
 			NewDisplay d = display;
 		} else {
 			Display* d = display;
@@ -4344,7 +4373,7 @@ struct Player
 
 	void exchange_display(Player* p)
 	{
-		version (Windows) {
+		version (NewDisplay) {
 			NewDisplay d;
 		} else {
 			Display* d;
@@ -4383,7 +4412,7 @@ struct Player
 			auto d = display;
 
 			d.secbas = -1;
-			version (Windows) {} else {
+			version (NewDisplay) {} else {
 				d.text.clear();
 			}
 			if (defeat || numleft == 1)

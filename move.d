@@ -127,14 +127,21 @@ void hrdprd(Player* p)
 			c.fnd = p.round + typx[c.phs].prodtime;
 			p.display.produce(c);
 
-			/+if (overpop)
-				p.display.overpop(false);+/
+
+			version (NewDisplay) {}
+			else {
+				if (overpop)
+					p.display.overpop(false);
+			}
 			overpop = false;                 // no longer overpopulated
 		}
 		else				// else overpop
 		{
 			overpop = true;
-			//p.display.overpop(true);
+			version (NewDisplay) {}
+			else {
+				p.display.overpop(true);
+			}
 		}
 	}
 }

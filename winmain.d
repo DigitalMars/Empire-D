@@ -27,7 +27,13 @@ import std.conv;
 import empire;
 import winemp;
 import eplayer;
-import newdisplay;
+version(NewDisplay) {
+	import newdisplay;
+} else {
+	import display;
+	import text;
+	import core.stdc.string;	// for strlen
+}
 import twin;
 import init;
 import move;
@@ -393,13 +399,18 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 
 			if (global.inited && global.player)
 			{
-				//Display* d = global.player.display;
-				NewDisplay d = global.player.display;
 
-				d.secbas = -1;
-				//d.setdispsize(d.text.nrows, d.text.ncols);
-				//d.text.clear();
-				adjSector(global.scalex, global.scaley);
+				version(NewDisplay) {
+					NewDisplay d = global.player.display;
+					d.secbas = -1;
+					adjSector(global.scalex, global.scaley);
+				} else {
+					Display* d = global.player.display;
+					d.secbas = -1;
+					d.setdispsize(d.text.nrows, d.text.ncols);
+					d.text.clear();
+					adjSector(global.scalex, global.scaley);
+				}
 			}
 
 			return 0;
@@ -546,9 +557,11 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 					 *	has led to an actual change in the game state.
 					 */
 						global.dirty = true;
-
-						//p.display.text.TTunget(ch);
-						global.bufferedKey = cast(char) ch;
+						version(NewDisplay) {
+							global.bufferedKey = cast(char) ch;
+						} else {
+							p.display.text.TTunget(ch);
+						}
 						break ;
 					}
 				}
@@ -899,19 +912,25 @@ extern (Windows) int WndProc(HWND hwnd, uint message, WPARAM wParam,
 					// Fill background
 					FillRect(hdc, &global.text, GetStockObject(WHITE_BRUSH));
 
-					int col2 = global.text.right * 2 / 3;
-					int col3 = global.text.right * 5 / 6;
-
 					SelectObject(hdc, global.hFont);
-					StatusPanel sp = global.player.display.panel;
+
+
+					version(NewDisplay) {
+						int col2 = global.text.right * 2 / 3;
+						int col3 = global.text.right * 5 / 6;
+						StatusPanel sp = global.player.display.panel;
+					}
 					for (i = 0; i < 4; i++)
 					{
-						//TextOutA(hdc, 0, global.cyChar * i, vbuffer[i], strlen(vbuffer[i]));
-						TextOutA(hdc, 0, global.cyChar * i, sp[i].ptr, sp[i].length);
-						TextOutA(hdc, col2, global.cyChar * i,
-						sp[i | 4].ptr, sp[i | 4].length);
-						TextOutA(hdc, col3, global.cyChar * i,
-						sp[i | 8].ptr, sp[i | 8].length);
+						version(NewDisplay){
+							TextOutA(hdc, 0, global.cyChar * i, sp[i].ptr, sp[i].length);
+							TextOutA(hdc, col2, global.cyChar * i,
+							sp[i | 4].ptr, sp[i | 4].length);
+							TextOutA(hdc, col3, global.cyChar * i,
+							sp[i | 8].ptr, sp[i | 8].length);
+						} else {
+							TextOutA(hdc, 0, global.cyChar * i, vbuffer[i].ptr, strlen(vbuffer[i].ptr));
+						}
 					}
 				}
 			}
@@ -1396,10 +1415,13 @@ void winSetup()
 	{
 		//PRINTF("player %d\n", plynum);
 		Player* p = &player[plynum];
-		NewDisplay d = p.display = new NewDisplay();
 
-		//d.initialize();
-
+		version(NewDisplay) {
+			NewDisplay d = p.display = new NewDisplay();
+		} else {
+			Display* d = p.display = new Display();
+			d.initialize();
+		}
 		p.num = plynum;
 		p.map = ((plynum == 0) ? .map : new ubyte[MAPSIZE]).ptr;
 		p.human = (plynum == 1 && !global.demo);
@@ -1414,13 +1436,16 @@ void winSetup()
 		{
 			p.secflg = 1;
 			p.watch = DAwindows;
-			//d.text.TTinit();
-			//d.text.watch = p.watch;
-			d.panel.isActive = true;
-			/+d.maptab = MTcgacolor;
-			d.setdispsize(d.text.nrows, d.text.ncols);
-			d.text.clear();
-			d.text.block_cursor();+/
+			version(NewDisplay) {
+				d.panel.isActive = true;
+			} else {
+				d.text.TTinit();
+				d.text.watch = p.watch;
+				d.maptab = MTcgacolor;
+				d.setdispsize(d.text.nrows, d.text.ncols);
+				d.text.clear();
+				d.text.block_cursor();
+			}
 		}
 		if (plynum)
 			p.citsel();		// select city for each player
@@ -1445,8 +1470,13 @@ void winRestore()
 	for (plynum = 0; plynum <= numply; plynum++)
 	{
 		Player* p = &player[plynum];
-		NewDisplay d = p.display = new NewDisplay();
-		//d.initialize();
+		version(NewDisplay) {
+			NewDisplay d = p.display = new NewDisplay();
+		} else {
+			Display* d = p.display = new Display();
+			d.initialize();
+		}
+
 
 		if (p.human)
 		{
@@ -1457,13 +1487,17 @@ void winRestore()
 		{
 			p.secflg = 1;
 			p.watch = DAwindows;
-			/+d.text.TTinit();
-			d.text.watch = p.watch;+/
-			d.panel.isActive = true;
-			/+d.maptab = MTcgacolor;
-			d.setdispsize(d.text.nrows, d.text.ncols);
-			d.text.clear();
-			d.text.block_cursor();+/
+
+			version(NewDisplay){
+				d.panel.isActive = true;
+			} else {
+				d.text.TTinit();
+				d.text.watch = p.watch;
+				d.maptab = MTcgacolor;
+				d.setdispsize(d.text.nrows, d.text.ncols);
+				d.text.clear();
+				d.text.block_cursor();
+			}
 		}
 	}
 	plynum = 1;			// get the default player
@@ -1492,12 +1526,17 @@ bool adjSector(double newscalex, double newscaley)
 	int gap;
 	int n;
 	int width;
-	//Display* d;
-	NewDisplay d;
+	version(NewDisplay) {
+		NewDisplay d;
+	} else {
+		Display* d;
+	}
 
 	bool moved = false;
 	int newval;
 
+	// todo Stewart removed this, added as a last resort.
+	if (!global.player)	 return false;	// if not initialized yet
 	if (global.cursor <= LOC_LASTMAGIC) return false;
 
 //PRINTF("Before: ulcorner = %d\n", global.ulcorner);
@@ -1764,21 +1803,22 @@ void ShowBlast(int state, loc_t loc)
 	if (state)
 		UpdateWindow(global.hwnd);
 }
-
-/**
+version(NewDisplay)
+{
+	/**
  * Retrieve a buffered keystroke and clear it
  */
-char getKeystroke() {
+	char getKeystroke() {
 	char key = peekKeystroke();
-	global.bufferedKey = char.init;
-	return key;
-}
+		global.bufferedKey = char.init;
+		return key;
+	}
 
-
-/**
+	/**
  * Retrieve a buffered keystroke without clearing it
  */
-char peekKeystroke() {
+	char peekKeystroke() {
 	// toUpper() turns char.init (==255) 376 and then cast(char) turns it into 120 == ('x')
 	return global.bufferedKey == char.init ? char.init : cast(char) toUpper(global.bufferedKey);
+	}
 }

@@ -35,7 +35,8 @@ import var;
  *		Superseded by NewDisplay.  However, non-Windows versions will still
  *		need this until StatusPanel is implemented for the platform.
  */
-deprecated struct Display
+//deprecated
+struct Display
 {
 	Text text;
 	int timeinterval;   // 100ths of a second msg delay time
@@ -930,17 +931,17 @@ deprecated struct Display
 
 void typcit(Player* p, City* c)
 {
-	version (Windows) {}
+	version (NewDisplay) {}
 	else {
 		Display* d = p.display;
-		Text* text= d.text;
+		Text* text= &(d.text);
 
 		if (text.watch)
 		{
 			if (c.phs == -1)
 				return ;        // invalid city phase
 			text.cmes(text.DS(1),text.narrow ? "Prod: " : "Producing: ");
-			text.vsmes("%.*s Completion: %d",nmes_p(c.phs,2),c.fnd);
+			text.vsmes("%.*s Completion: %d",d.nmes_p(c.phs,2),c.fnd);
 			if (p.human && c.fipath)
 				text.vsmes(" Fipath: %u,%u",ROW(c.fipath),COL(c.fipath));
 			text.deleol();
@@ -954,7 +955,7 @@ void typcit(Player* p, City* c)
 
 void savgam()
 {
-	version (Windows) {}
+	version (NewDisplay) {}
 	else {
 		Text* t = &(var.player[plynum].display.text);
 
@@ -976,7 +977,7 @@ void savgam()
 
 void lstvar()
 {
-	version (Windows) {}
+	version (NewDisplay) {}
 	else {
 		int i,j,k,ene;
 		Player* p = Player.get(2);
