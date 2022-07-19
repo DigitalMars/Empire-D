@@ -1769,13 +1769,6 @@ struct Player
 	int cmove(Unit* u, dir_t* pr2)
 	{
 		static int c = ' ';
-		//Player* p = this;
-		version (NewDisplay) {
-			//NewDisplay d = display;
-		} else {
-			Display* d = display;
-		}
-
 		u.abd = aboard(u);          // count how many are aboard
 		assert(chkloc(u.loc));
 		arrloc(u.loc);              // update loci & troopt
@@ -1810,7 +1803,7 @@ struct Player
 			{
 				if (!display.insect(u.loc, 2))
 					center(u.loc);
-				d.pcur(u.loc);
+				display.pcur(u.loc);
 				//c = toupper(TTin());
 			}
 		}
