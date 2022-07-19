@@ -172,15 +172,16 @@ struct Display
 
 	int rusure()
 	{
-		return 1;
-	/+
-		char s;
+		version (idiotproof) {
+			char s;
 
-		text.cmes(text.DS(3),"Are you sure (Y or N)? N\1\b");
-		s = toupper(text.TTin());
-		text.output(s);								// echo
-		return s == 'Y';
-	 +/
+			text.cmes(text.DS(3),"Are you sure (Y or N)? N\1\b");
+			s = toupper(text.TTin());
+			text.output(s);								// echo
+			return s == 'Y';
+		} else {
+			return 1;
+		}
 	}
 
 	void your()
